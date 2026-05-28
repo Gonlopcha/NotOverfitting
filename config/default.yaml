@@ -1,0 +1,26 @@
+mt5:
+  login: null
+  password: null
+  server: null
+  timeout: 10000
+
+data:
+  default_symbols: ["EURUSD", "GBPUSD", "USDJPY"]
+  default_timeframe: "H1"
+  storage_path: "./data_store"
+  cache_days: 30
+
+pipeline:
+  cleaner:
+    fill_method: "ffill"
+    outlier_std: 3.0
+    min_data_pct: 0.95
+  pca:
+    variance_threshold: 0.95
+    max_components: 50
+
+backtest:
+  initial_capital: 10000
+  commission_pct: 0.001
+  slippage_pips: 1
+  position_size: 0.01

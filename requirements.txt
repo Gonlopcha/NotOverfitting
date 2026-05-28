@@ -1,0 +1,28 @@
+# Core
+MetaTrader5==5.0.45
+pandas==1.4.4
+numpy==1.21.6
+PyYAML==6.0
+
+# GUI
+PyQt5==5.15.9
+
+# Pipeline / ML
+scikit-learn==1.0.2
+xgboost==1.6.2
+lightgbm==3.3.5
+joblib==1.1.1
+
+# Optimización
+optuna==3.1.0
+
+# Visualización
+matplotlib==3.5.3
+mplfinance==0.12.9b7
+pyqtgraph==0.13.3
+
+# Almacenamiento
+pyarrow==8.0.0     # Para Parquet
+
+# Utilidades
+pydantic==1.10.7   # Validación de datos (compatible con 3.9)

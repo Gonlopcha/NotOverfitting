@@ -81,74 +81,75 @@ NotOverfitting/
 │   ├── default.yaml                # Config por defecto (symbols, timeframes, paths)
 │   └── logging.yaml                # Config de logging
 │
-├── core/                           # ⚙️ Capa Core — sin dependencias externas pesadas
-│   ├── __init__.py
-│   ├── config_manager.py           # Carga/merge de YAML, acceso tipado
-│   ├── event_bus.py                # Pub/Sub desacoplado entre módulos
-│   ├── logger.py                   # Wrapper de logging con rotación
-│   ├── registry.py                 # Registro dinámico de estrategias/features
-│   ├── mt5_connector.py            # Singleton Thread-Safe para MT5 (descarga y órdenes)
-│   └── exceptions.py               # Excepciones custom del sistema
-│
-├── data/                           # 📊 Capa de Datos
-│   ├── __init__.py
-│   ├── data_manager.py             # Orquesta descarga, validación, almacenamiento
-│   ├── cache_manager.py            # Cache inteligente con invalidación por fecha
-│   ├── data_store.py               # Persistencia (SQLite metadata + Parquet datos)
-│   └── schemas.py                  # Dataclasses/Pydantic para validación de datos
-│
-├── pipeline/                       # 🔬 Capa Pipeline (reproducible backtest ↔ live)
-│   ├── __init__.py
-│   ├── orchestrator.py             # Ejecuta el pipeline completo de forma idéntica
-│   ├── cleaner.py                  # Fase 1: limpieza (NaN, outliers, gaps)
-│   ├── feature_generator.py        # Registro de features con decoradores
-│   ├── pca_transformer.py          # PCA con fit/transform separados
-│   ├── base.py                     # Clase base PipelineStep (ABC)
-│   └── features/                   # Directorio de features modulares
-│       ├── __init__.py
-│       ├── technical.py            # RSI, MACD, Bollinger, ATR...
-│       ├── statistical.py          # Rolling stats, z-scores, skew...
-│       ├── microstructure.py       # Spread, volume profile, VWAP...
-│       └── custom.py               # Features del usuario
-│
-├── strategy/                       # 🧠 Capa Estrategia
-│   ├── __init__.py
-│   ├── base.py                     # StrategyBase ABC (on_bar, on_signal)
-│   ├── model_manager.py            # Entrena, serializa, carga modelos (joblib/pickle)
-│   ├── signal_generator.py         # Traduce predicción → señal (BUY/SELL/HOLD)
-│   └── strategies/                 # Directorio de estrategias concretas
-│       ├── __init__.py
-│       └── example_ml_strategy.py  # Ejemplo: estrategia basada en ML
-│
-├── backtest/                       # 📈 Capa Backtest
-│   ├── __init__.py
-│   ├── engine.py                   # Motor de backtest event-driven
-│   ├── portfolio.py                # Gestión de posiciones, equity, margin
-│   ├── metrics.py                  # Sharpe, Sortino, MaxDD, Calmar, Win Rate...
-│   ├── optimization.py             # Grid search, random search, Optuna
-│   └── walk_forward.py             # Walk-forward analysis / validación temporal
-│
-├── gui/                            # 🖥️ Capa GUI
-│   ├── __init__.py
-│   ├── main_window.py              # Ventana principal con QTabWidget
-│   ├── widgets/                    # Widgets reutilizables
+├── src/                            # 🚀 Código fuente de la aplicación
+│   ├── core/                       # ⚙️ Capa Core — sin dependencias externas pesadas
 │   │   ├── __init__.py
-│   │   ├── data_panel.py           # Panel de descarga y visualización de datos
-│   │   ├── pipeline_panel.py       # Panel de configuración del pipeline
-│   │   ├── backtest_panel.py       # Panel de backtesting
-│   │   ├── optimization_panel.py   # Panel de optimización
-│   │   ├── results_panel.py        # Panel de resultados y métricas
-│   │   ├── chart_widget.py         # Gráfico de velas + indicadores
-│   │   └── log_widget.py           # Visor de logs en tiempo real
-│   ├── styles/
-│   │   └── dark_theme.qss          # Stylesheet para tema oscuro
-│   └── resources/                  # Iconos, imágenes
-│
-├── live/                           # 🔴 Capa Live Trading (futura)
-│   ├── __init__.py
-│   ├── executor.py                 # Ejecuta órdenes en MT5
-│   ├── risk_manager.py             # Gestión de riesgo en tiempo real
-│   └── monitor.py                  # Monitor de posiciones abiertas
+│   │   ├── config_manager.py       # Carga/merge de YAML, acceso tipado
+│   │   ├── event_bus.py            # Pub/Sub desacoplado entre módulos
+│   │   ├── logger.py               # Wrapper de logging con rotación
+│   │   ├── registry.py             # Registro dinámico de estrategias/features
+│   │   ├── mt5_connector.py        # Singleton Thread-Safe para MT5 (descarga y órdenes)
+│   │   └── exceptions.py           # Excepciones custom del sistema
+│   │
+│   ├── data/                       # 📊 Capa de Datos
+│   │   ├── __init__.py
+│   │   ├── data_manager.py         # Orquesta descarga, validación, almacenamiento
+│   │   ├── cache_manager.py        # Cache inteligente con invalidación por fecha
+│   │   ├── data_store.py           # Persistencia (SQLite metadata + Parquet datos)
+│   │   └── schemas.py              # Dataclasses/Pydantic para validación de datos
+│   │
+│   ├── pipeline/                   # 🔬 Capa Pipeline (reproducible backtest ↔ live)
+│   │   ├── __init__.py
+│   │   ├── orchestrator.py         # Ejecuta el pipeline completo de forma idéntica
+│   │   ├── cleaner.py              # Fase 1: limpieza (NaN, outliers, gaps)
+│   │   ├── feature_generator.py    # Registro de features con decoradores
+│   │   ├── pca_transformer.py      # PCA con fit/transform separados
+│   │   ├── base.py                 # Clase base PipelineStep (ABC)
+│   │   └── features/               # Directorio de features modulares
+│   │       ├── __init__.py
+│   │       ├── technical.py        # RSI, MACD, Bollinger, ATR...
+│   │       ├── statistical.py      # Rolling stats, z-scores, skew...
+│   │       ├── microstructure.py   # Spread, volume profile, VWAP...
+│   │       └── custom.py           # Features del usuario
+│   │
+│   ├── strategy/                   # 🧠 Capa Estrategia
+│   │   ├── __init__.py
+│   │   ├── base.py                 # StrategyBase ABC (on_bar, on_signal)
+│   │   ├── model_manager.py        # Entrena, serializa, carga modelos (joblib/pickle)
+│   │   ├── signal_generator.py     # Traduce predicción → señal (BUY/SELL/HOLD)
+│   │   └── strategies/             # Directorio de estrategias concretas
+│   │       ├── __init__.py
+│   │       └── example_ml_strategy.py  # Ejemplo: estrategia basada en ML
+│   │
+│   ├── backtest/                   # 📈 Capa Backtest
+│   │   ├── __init__.py
+│   │   ├── engine.py               # Motor de backtest event-driven
+│   │   ├── portfolio.py            # Gestión de posiciones, equity, margin
+│   │   ├── metrics.py              # Sharpe, Sortino, MaxDD, Calmar, Win Rate...
+│   │   ├── optimization.py         # Grid search, random search, Optuna
+│   │   └── walk_forward.py         # Walk-forward analysis / validación temporal
+│   │
+│   ├── gui/                        # 🖥️ Capa GUI
+│   │   ├── __init__.py
+│   │   ├── main_window.py          # Ventana principal con QTabWidget
+│   │   ├── widgets/                # Widgets reutilizables
+│   │   │   ├── __init__.py
+│   │   │   ├── data_panel.py       # Panel de descarga y visualización de datos
+│   │   │   ├── pipeline_panel.py   # Panel de configuración del pipeline
+│   │   │   ├── backtest_panel.py   # Panel de backtesting
+│   │   │   ├── optimization_panel.py
+│   │   │   ├── results_panel.py    # Panel de resultados y métricas
+│   │   │   ├── chart_widget.py     # Gráfico de velas + indicadores
+│   │   │   └── log_widget.py       # Visor de logs en tiempo real
+│   │   ├── styles/
+│   │   │   └── dark_theme.qss      # Stylesheet para tema oscuro
+│   │   └── resources/              # Iconos, imágenes
+│   │
+│   └── live/                       # 🔴 Capa Live Trading (futura)
+│       ├── __init__.py
+│       ├── executor.py             # Ejecuta órdenes en MT5
+│       ├── risk_manager.py         # Gestión de riesgo en tiempo real
+│       └── monitor.py              # Monitor de posiciones abiertas
 │
 └── tests/                          # 🧪 Tests
     ├── test_pipeline.py
@@ -742,33 +743,33 @@ graph TB
 ## 12. Plan de Implementación por Fases
 
 ### Fase 1 — Fundación (Core + Data)
-- [ ] `core/` — ConfigManager, EventBus, Logger, Registry, Exceptions, MT5Connector (Thread-Safe)
-- [ ] `data/` — DataManager, DataStore, CacheManager
+- [ ] `src/core/` — ConfigManager, EventBus, Logger, Registry, Exceptions, MT5Connector (Thread-Safe)
+- [ ] `src/data/` — DataManager, DataStore, CacheManager
 - [ ] `config/` — default.yaml, logging.yaml
 - [ ] Tests unitarios de Core y Data
 
 ### Fase 2 — Pipeline
-- [ ] `pipeline/base.py` — PipelineStep ABC
-- [ ] `pipeline/cleaner.py` — Fase 1 de limpieza
-- [ ] `pipeline/feature_generator.py` — Motor de features con decoradores
-- [ ] `pipeline/features/` — Features técnicas, estadísticas, microestructura
-- [ ] `pipeline/pca_transformer.py` — PCA con fit/transform
-- [ ] `pipeline/orchestrator.py` — Pipeline reproducible
+- [ ] `src/pipeline/base.py` — PipelineStep ABC
+- [ ] `src/pipeline/cleaner.py` — Fase 1 de limpieza
+- [ ] `src/pipeline/feature_generator.py` — Motor de features con decoradores
+- [ ] `src/pipeline/features/` — Features técnicas, estadísticas, microestructura
+- [ ] `src/pipeline/pca_transformer.py` — PCA con fit/transform
+- [ ] `src/pipeline/orchestrator.py` — Pipeline reproducible
 - [ ] Tests de reproducibilidad (same input → same output)
 
 ### Fase 3 — Estrategia + Backtest
-- [ ] `strategy/base.py` — StrategyBase ABC
-- [ ] `strategy/model_manager.py` — Train/predict/serialize
-- [ ] `strategy/signal_generator.py` — Lógica de señales
-- [ ] `backtest/engine.py` — Motor event-driven
-- [ ] `backtest/portfolio.py` — Gestión de posiciones
-- [ ] `backtest/metrics.py` — Cálculo de métricas
+- [ ] `src/strategy/base.py` — StrategyBase ABC
+- [ ] `src/strategy/model_manager.py` — Train/predict/serialize
+- [ ] `src/strategy/signal_generator.py` — Lógica de señales
+- [ ] `src/backtest/engine.py` — Motor event-driven
+- [ ] `src/backtest/portfolio.py` — Gestión de posiciones
+- [ ] `src/backtest/metrics.py` — Cálculo de métricas
 - [ ] Tests de backtest con datos conocidos
 
 ### Fase 4 — GUI
-- [ ] `gui/main_window.py` — Ventana principal con tabs
-- [ ] `gui/widgets/data_panel.py` — Conexión MT5 + descarga
-- [ ] `gui/widgets/pipeline_panel.py` — Configuración del pipeline
+- [ ] `src/gui/main_window.py` — Ventana principal con tabs
+- [ ] `src/gui/widgets/data_panel.py` — Conexión MT5 + descarga
+- [ ] `src/gui/widgets/pipeline_panel.py` — Configuración del pipeline
 - [ ] `gui/widgets/backtest_panel.py` — Ejecución de backtest
 - [ ] `gui/widgets/results_panel.py` — Visualización de resultados
 - [ ] `gui/widgets/chart_widget.py` — Gráfico de velas
