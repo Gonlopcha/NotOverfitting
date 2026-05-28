@@ -37,3 +37,18 @@ def setup_logger(default_path='config/logging.yaml', default_level=logging.INFO)
 
 # Instancia global por defecto
 logger = setup_logger()
+
+
+def get_logger(name: str = None) -> logging.Logger:
+    """
+    Obtiene un logger específico.
+    
+    Args:
+        name: Nombre del logger (normalmente __name__ del módulo)
+        
+    Returns:
+        Logger configurado
+    """
+    if name is None:
+        return logger
+    return logging.getLogger(name)

@@ -1,0 +1,1050 @@
+PLAN DE ESTUDIOS
+Construcción Científica de un Robot de Trading
+con Control Sistemático de Overfitting
+────────────────────────────────────────────────────────────────────────
+
+Enfoque: Ciencia de Datos Aplicada a Mercados Financieros
+Plataforma Objetivo: MetaTrader 5
+────────────────────────────────────────────────────────────────────────
+
+Mayo 2026
+
+Contenido
+1. Dictamen Técnico: MetaTrader 5 vs NinjaTrader
+2. Arquitectura del Plan y Textos de Referencia
+3. Fase 1 — Infraestructura Estadística
+3.1 Análisis Exploratorio de Datos Financieros
+3.2 Distribuciones, Muestreo y Bootstrap
+3.3 Pruebas de Hipótesis para Estrategias de Trading
+4. Fase 2 — Modelado Predictivo
+4.1 Regresión Aplicada a Mercados
+4.2 Clasificación y Generación de Señales Binarias
+4.3 Métodos Ensemble: Random Forest
+5. Fase 3 — Protocolo Anti-Overfitting (Fase Nuclear)
+5.1 Diagnóstico y Prevención del Sobreajuste
+5.2 Partición Temporal de Datos
+5.3 Tratamiento de Datos Desbalanceados en Mercados
+6. Fase 4 — Series Temporales y Modelos Autorregresivos
+6.1 Modelos ARMA y Arbitraje Estadístico
+6.2 Redes Recurrentes para Series Financieras
+7. Fase 5 — Gestión de Riesgos y Backtesting Estadístico
+7.1 Gestión de Riesgos y Optimización de Cartera
+7.2 Backtesting sin Data Snooping
+8. Fase 6 — Ingeniería de Características y Pipeline
+8.1 Feature Engineering Financiero
+8.2 Reducción Dimensional (PCA)
+9. Fase 7 — Deployment en MetaTrader 5
+9.1 Pipeline Python → MT5
+9.2 Paper Trading y Validación en Vivo
+Apéndice A: Checklist Anti-Overfitting Transversal
+Apéndice B: Capítulos Excluidos y Justificación
+Apéndice C: Cronograma Sugerido (16 Semanas)
+Apéndice D: Lectura Complementaria Recomendada
+
+1. Dictamen Técnico: MetaTrader 5 vs NinjaTrader
+Antes de invertir cientos de horas en un plan de estudios, es necesario resolver la elección de
+plataforma, ya que condiciona el lenguaje de programación del bot, las librerías disponibles y la
+viabilidad del pipeline completo de datos.
+
+Tabla Comparativa
+Criterio
+
+MetaTrader 5
+
+NinjaTrader
+
+Lenguaje nativo
+
+MQL5 + Python (API oficial)
+
+C# (NinjaScript)
+
+API Python
+
+Sí — librería MetaTrader5 (pip)
+
+No nativa. Requiere puente
+externo
+
+Costo
+
+Gratuito con la mayoría de
+brókers
+
+Gratuito limitado / $60-1099
+USD licencia
+
+Pipeline de datos
+
+Python end-to-end (Pandas →
+modelo → orden)
+
+Rompe la cadena: Python → C#
+→ orden
+
+Soporte en Inglese
+
+Capítulos completos dedicados
+
+No cubierto
+
+Multi-activo
+
+Forex, CFD, futuros, acciones
+
+Principalmente futuros US
+
+Comunidad algo-trading
+
+MQL5.com — la más grande del
+mundo
+
+Amplia pero centrada en futuros
+
+Backtesting integrado
+
+Strategy Tester (multi-hilo)
+
+Sí, robusto para NinjaScript
+
+Latencia de ejecución
+
+Dependiente del bróker
+
+Mejor para futuros con
+Rithmic/CQG
+
+Curva de aprendizaje
+
+Moderada (Python ya lo
+dominas)
+
+Alta (requiere aprender C#)
+
+Veredicto: MetaTrader 5
+La recomendación es MetaTrader 5, y la razón es tanto técnica como práctica:
+•
+
+•
+•
+
+•
+
+Continuidad del pipeline. Tu pipeline completo vive en Python: desde la limpieza con Pandas, el
+modelado con scikit-learn, hasta el envío de órdenes con la librería MetaTrader5. No hay ruptura
+de lenguaje.
+Alineación con el material. El libro de Inglese —tu tercer pilar— dedica capítulos específicos a la
+conexión Python↔MT5. Elegir NinjaTrader invalidaría aproximadamente el 30% de tu material.
+Costo de oportunidad. NinjaTrader requiere C#. Aprender un segundo lenguaje para el
+deployment no aporta valor al objetivo central (ciencia de datos para trading) y fragmenta tu
+tiempo.
+Única excepción. NinjaTrader es objetivamente superior si operas futuros en mercados
+estadounidenses con feeds de datos como Rithmic o CQG, donde la latencia sub-milisegundo
+importa. Si ese es tu nicho, reconsidéralo. Para cualquier otro caso, MT5 es la elección correcta.
+
+2. Arquitectura del Plan y Textos de Referencia
+Filosofía: Anti-Overfitting como Eje Transversal
+El error más común en trading algorítmico no es elegir el modelo equivocado —es sobreajustar el
+modelo correcto. Un Random Forest con 500 árboles puede producir un accuracy del 95% en backtesting
+y perder dinero sistemáticamente en vivo. Este plan está diseñado para que eso no ocurra.
+El overfitting no se combate en una sola fase: se combate en cada decisión del pipeline. Por eso, aunque
+la Fase 3 es el núcleo teórico anti-overfitting, cada módulo incluye controles específicos de sobreajuste
+aplicados a su contexto. El Apéndice A consolida todos estos controles en un checklist unificado.
+
+Textos Primarios
+Pilar
+
+Texto
+
+Autor(es)
+
+Rol en el Plan
+
+1 · Estadística
+
+Estadística Práctica
+para Ciencia
+de Datos con R y
+Python
+
+P. Bruce, A. Bruce,
+P. Gedeck
+
+Fundamento
+matemático.
+Limpieza,
+distribuciones,
+pruebas de hipótesis,
+regresión.
+
+2 · Machine Learning
+
+Aprende Machine
+Learning
+en Español
+
+J. I. Bagnato
+
+Implementación de
+modelos.
+Overfitting, ensemble,
+redes
+neuronales, series
+temporales.
+
+2 · ML (complemento)
+
+Hands-On Machine
+Learning
+with Scikit-Learn, Keras
+& TF
+
+A. Géron
+
+Profundización técnica.
+Consultar cuando
+Bagnato
+requiera mayor detalle.
+
+3 · Finanzas
+
+Python para Finanzas y
+Trading Algorítmico
+
+L. Inglese,
+J. G. Gomila Salas
+
+Aplicación financiera.
+Riesgos, backtesting,
+ARMA,
+DNN/RNN, deployment
+MT5.
+
+Lectura Complementaria Altamente Recomendada
+Advances in Financial Machine Learning de Marcos López de Prado (Wiley, 2018). Este libro es el
+referente mundial en anti-overfitting aplicado a finanzas. No es necesario leerlo completo, pero los
+capítulos sobre Purged Cross-Validation, Combinatorial Purged CV y Deflated Sharpe Ratio son lectura
+esencial si quieres llevar el rigor estadístico al máximo nivel.
+
+3. Fase 1 — Infraestructura Estadística
+Objetivo: Dominar las herramientas estadísticas necesarias para manipular datos financieros con rigor,
+detectar anomalías y entender las distribuciones reales del mercado.
+
+3.1 Análisis Exploratorio de Datos Financieros
+El primer paso antes de cualquier modelo es entender qué datos tienes, qué les falta y qué patrones
+básicos contienen. En el contexto financiero esto significa: identificar gaps de mercado (fines de semana,
+festivos), detectar precios anómalos del bróker (spikes de spread), verificar la integridad de las velas
+OHLCV y normalizar zonas horarias.
+📖 Lecturas
+
+• Bruce & Gedeck — Cap. 1: Análisis exploratorio de datos (p. 1-45)
+• Bagnato — Análisis Exploratorio de Datos (p. 12) — lectura rápida como repaso
+Conceptos clave a dominar:
+•
+•
+•
+•
+
+Medidas de tendencia central y dispersión (media, mediana, desviación estándar, MAD)
+aplicadas a retornos, no a precios brutos.
+Detección de outliers con IQR y Z-score para filtrar spikes del bróker.
+Visualización exploratoria: histogramas de retornos, boxplots por sesión de mercado, heatmaps
+de correlación entre pares.
+Manejo de datos faltantes: interpolación vs. eliminación en series temporales (nunca imputar
+con la media en datos secuenciales).
+
+🎯 Entregable: Script en Pandas que carga datos históricos del bróker (CSV o MT5 API), detecta y
+elimina datos corruptos, calcula estadísticas descriptivas y genera un reporte visual de calidad de datos.
+Anti-overfitting: No busques patrones en esta fase. El EDA es para entender la estructura de los
+datos, no para generar hipótesis de trading. Si descubres un 'patrón' visual aquí, anótalo pero no lo uses
+como feature hasta validarlo estadísticamente en la Fase 3.
+────────────────────────────────────────────────────────────────────────
+
+3.2 Distribuciones, Muestreo y Bootstrap
+Los retornos financieros no siguen una distribución normal. Tienen colas pesadas (fat tails), asimetría, y
+la varianza no es constante (heterocedasticidad). Ignorar esto invalida cualquier modelo que asuma
+normalidad, que son la mayoría de los que enseñan los libros de texto sin advertirlo.
+📖 Lecturas
+
+• Bruce & Gedeck — Cap. 2: Distribuciones de datos y muestreo (p. 47-85)
+Conceptos clave a dominar:
+
+•
+•
+•
+•
+
+Distribución normal vs. distribución real de retornos: curtosis, asimetría, test de Jarque-Bera
+para verificar normalidad.
+Teorema del límite central y por qué no aplica directamente a series financieras con
+autocorrelación.
+Bootstrap: técnica de remuestreo para estimar intervalos de confianza del rendimiento de una
+estrategia sin asumir distribución paramétrica.
+Distribución de muestreo vs. distribución de la población: la diferencia entre el Sharpe de tu
+backtest y el Sharpe real.
+
+🎯 Entregable: Análisis de distribución de retornos para tu activo objetivo: histograma, QQ-plot contra
+normal, cálculo de curtosis/asimetría, bootstrap del Sharpe Ratio con intervalo de confianza al 95%.
+Anti-overfitting: Si tu modelo asume normalidad y los datos no la cumplen, el backtest miente. Aquí
+aprendes a detectar esa mentira antes de que cueste dinero.
+────────────────────────────────────────────────────────────────────────
+
+3.3 Pruebas de Hipótesis para Estrategias de Trading
+Este módulo es la primera línea de defensa contra el overfitting. Cada estrategia de trading es una
+hipótesis estadística: 'este patrón genera retornos superiores al azar'. Las pruebas de significancia te
+dicen si esa hipótesis tiene sustento o si es ruido.
+📖 Lecturas
+
+• Bruce & Gedeck — Cap. 3: Experimentos estadísticos y pruebas significativas (p. 87-137)
+Conceptos clave a dominar:
+•
+•
+•
+•
+•
+•
+
+Hipótesis nula y alternativa aplicadas a trading: H₀ = 'la estrategia no genera alpha' vs. H₁ = 'la
+estrategia genera alpha'.
+p-valor: probabilidad de observar los resultados de tu backtest bajo H₀. Un p-valor de 0.03 no
+significa 97% de probabilidad de ganar.
+Error tipo I (falso positivo) y tipo II (falso negativo): en trading, el tipo I es devastador — creer
+que tienes una estrategia cuando no la tienes.
+Test-t para comparar el retorno medio de tu estrategia contra cero (o contra buy & hold).
+Corrección de pruebas múltiples (Bonferroni, FDR): si pruebas 100 combinaciones de
+parámetros, 5 parecerán significativas por puro azar al 5%.
+Permutation tests: método no paramétrico para evaluar significancia sin asumir distribución.
+
+🎯 Entregable: Framework de evaluación estadística: dado un backtest, calcular p-valor, intervalo de
+confianza del retorno, y aplicar corrección de Bonferroni si se probaron múltiples configuraciones.
+Anti-overfitting: Este capítulo es CRÍTICO. El p-hacking (probar combinaciones hasta encontrar una
+'significativa') es la forma más común de overfitting en trading. Si probaste 20 configuraciones y una dio
+p=0.04, el p-valor real es ~0.56 (Bonferroni).
+
+4. Fase 2 — Modelado Predictivo
+Objetivo: Construir modelos supervisados que transformen datos financieros limpios en señales
+accionables, con comprensión profunda de sus supuestos y limitaciones.
+
+4.1 Regresión Aplicada a Mercados
+La regresión es la base de todo modelo predictivo. Aunque no la uses directamente en tu bot final,
+entender regresión lineal y sus variantes te da intuición sobre coeficientes, regularización y el trade-off
+sesgo-varianza que gobierna todo modelo.
+📖 Lecturas
+
+• Bruce & Gedeck — Cap. 4: Regresión y pronóstico (p. 139-189)
+• Bagnato — Regresión Lineal (p. 25-37)
+• Inglese — Cap. 8-9: Regresión Lineal y Logística aplicadas a mercados (Parte 2)
+Conceptos clave a dominar:
+•
+•
+•
+•
+
+Regresión lineal simple y múltiple: interpretación de coeficientes en contexto financiero.
+Regularización L1 (Lasso) y L2 (Ridge): técnicas de penalización que reducen overfitting forzando
+coeficientes hacia cero. Lasso además hace selección automática de features.
+Supuestos de regresión y cómo se violan en datos financieros: autocorrelación de residuos,
+heterocedasticidad, multicolinealidad entre features correlacionados.
+R² ajustado, AIC, BIC: métricas de calidad del modelo que penalizan complejidad.
+
+🎯 Entregable: Modelo de regresión Ridge/Lasso que predice retornos del siguiente período usando
+features de tu elección. Comparar R² en train vs. test para detectar sobreajuste temprano.
+────────────────────────────────────────────────────────────────────────
+
+4.2 Clasificación y Generación de Señales Binarias
+Aquí se construye el motor central del bot: un clasificador que transforma datos de mercado en
+decisiones binarias (1 = comprar, 0 = no operar). La regresión logística es el punto de partida porque es
+interpretable, rápida y sorprendentemente efectiva cuando está bien regularizada.
+📖 Lecturas
+
+• Bruce & Gedeck — Cap. 5: Clasificación (p. 191-229)
+• Bagnato — Regresión Logística (p. 38-46)
+• Inglese — Cap. 9: Regresión Logística aplicada a trading (Parte 2)
+Conceptos clave a dominar:
+•
+•
+
+Regresión logística: función sigmoide, log-odds, interpretación de coeficientes como
+probabilidades condicionales.
+Umbral de decisión: no usar 0.5 automáticamente. En mercados desbalanceados (más días sin
+señal que con señal), ajustar el umbral con la curva ROC.
+
+•
+•
+
+Métricas de clasificación: accuracy es INÚTIL en datos desbalanceados. Usar precision, recall, F1score, y AUC-ROC.
+Matriz de confusión financiera: un falso positivo = pérdida real (comprar cuando no debías). Un
+falso negativo = oportunidad perdida (no comprar cuando debías). Define cuál es más costoso
+para tu estrategia.
+
+🎯 Entregable: Clasificador logístico binario (compra/espera) entrenado con datos limpios de la Fase 1.
+Evaluar con precision/recall, no con accuracy. Incluir análisis de la curva ROC para elegir umbral óptimo.
+Anti-overfitting: Nunca reportes accuracy en un problema de clasificación financiera. Si el mercado
+sube el 52% de los días y tu modelo dice 'comprar siempre', tiene 52% de accuracy pero es
+completamente inútil.
+────────────────────────────────────────────────────────────────────────
+
+4.3 Métodos Ensemble: Random Forest
+Random Forest es uno de los modelos más robustos para trading porque combina múltiples árboles de
+decisión débiles para crear un predictor fuerte con menor varianza. Su resistencia inherente al overfitting
+(gracias al bagging y la aleatorización de features) lo hace especialmente adecuado para datos
+financieros ruidosos.
+📖 Lecturas
+
+• Bagnato — Árbol de Decisión & Random Forest, el poder del Ensamble (p. 47-92)
+• Inglese — Métodos Ensemble (Parte 3, Cap. 12-13)
+• Géron — Capítulos de Decision Trees y Ensemble Learning (referencia complementaria)
+Conceptos clave a dominar:
+•
+•
+•
+•
+
+•
+
+Árboles de decisión: ganancia de información, Gini impurity, y por qué un solo árbol sobreajusta
+inevitablemente.
+Bagging (Bootstrap Aggregating): cómo promediar árboles entrenados en submuestras reduce la
+varianza sin aumentar el sesgo.
+Random Forest: aleatorización de features en cada split como segunda capa anti-overfitting.
+Hiperparámetros críticos: max_depth (profundidad máxima — el control directo de
+complejidad), n_estimators (más árboles = menos varianza, con rendimientos decrecientes),
+min_samples_leaf (mínimo de muestras por hoja).
+Feature importance: qué variables contribuyen más a la predicción. Usar permutation
+importance, no la importancia basada en impureza (sesgada hacia features con alta
+cardinalidad).
+
+🎯 Entregable: Random Forest clasificador con señales binarias. Comparar rendimiento contra el
+modelo logístico del módulo anterior. Extraer feature importance para entender qué variables son
+realmente predictivas.
+
+5. Fase 3 — Protocolo Anti-Overfitting
+FASE NUCLEAR DEL PLAN
+Objetivo: Implementar un protocolo riguroso y sistemático que garantice que el rendimiento observado
+en backtesting es reproducible en mercado real. Todo lo aprendido hasta ahora converge aquí.
+
+5.1 Diagnóstico y Prevención del Sobreajuste
+El overfitting ocurre cuando un modelo memoriza el ruido de los datos de entrenamiento en lugar de
+aprender los patrones generalizables. En trading, esto se manifiesta como un backtest espectacular
+seguido de pérdidas reales. Este módulo te enseña a diagnosticarlo, prevenirlo y cuantificarlo.
+📖 Lecturas
+
+• Bagnato — Qué es overfitting y cómo solucionarlo (p. 69-72)
+• Bagnato — Conjunto de Entrenamiento, Test y Validación (p. 98-109)
+• Bruce & Gedeck — Cap. 6: Aprendizaje automático estadístico (p. 231-275)
+• Géron — Secciones de regularización y validación (referencia complementaria)
+Conceptos clave a dominar:
+•
+
+Trade-off sesgo-varianza: modelos simples (alto sesgo, baja varianza) vs. modelos complejos
+(bajo sesgo, alta varianza). El punto óptimo está en el medio.
+Curvas de aprendizaje: gráfico de error en train vs. error en validación conforme aumenta el
+tamaño del dataset. Diagnostican overfitting (gap grande) vs. underfitting (ambos errores altos).
+Regularización: L1, L2, Elastic Net, dropout (en redes neuronales), max_depth/min_samples (en
+árboles). Todas son formas de penalizar complejidad.
+Early stopping: detener el entrenamiento cuando el error de validación empieza a subir, antes de
+que el modelo memorice.
+Cross-validation estándar (K-Fold): dividir datos en K pliegues, entrenar en K-1 y validar en 1,
+rotar. Promedia el rendimiento para una estimación más robusta.
+
+•
+•
+•
+•
+
+IMPORTANTE: K-Fold estándar NO es válido para series temporales financieras. Ver Módulo 5.2 para
+la alternativa correcta.
+────────────────────────────────────────────────────────────────────────
+
+5.2 Partición Temporal de Datos
+En series temporales, el futuro no puede contaminar el pasado. Si tu modelo de entrenamiento ve datos
+de 2024 para predecir 2023, el backtest es una fantasía. Este es el error más grave y más común en
+trading algorítmico, y la mayoría de tutoriales online lo cometen sin advertirlo.
+📖 Lecturas
+
+•
+
+Bagnato — Conjunto de Entrenamiento, Test y Validación (p. 98-109)
+
+• Bruce & Gedeck — Cap. 6: Cross-validation (p. 231-275)
+• López de Prado — Purged Cross-Validation (lectura complementaria avanzada)
+Métodos de partición válidos para trading (de menor a mayor rigor):
+
+1. Train / Test Split Temporal
+Dividir los datos en orden cronológico: entrenar con 2018-2022, testear con 2023-2024. Simple pero
+desperdicia datos y solo da una estimación puntual.
+2. Walk-Forward Validation (Validación Andante)
+El estándar de la industria. Entrenar en la ventana [1, T], predecir [T+1, T+n], luego avanzar: entrenar en
+[1, T+n], predecir [T+n+1, T+2n], etc. Simula exactamente cómo operaría el bot en vivo: reentrenándose
+con datos nuevos.
+3. Purged K-Fold Cross-Validation
+Cross-validation adaptada a series temporales: se eliminan (purgan) las observaciones cercanas al borde
+entre train y test para evitar filtración de información. Añade un 'embargo' temporal entre pliegues.
+Descrito por López de Prado.
+4. Combinatorial Purged CV (CPCV)
+La versión más avanzada: genera todas las combinaciones posibles de pliegues train/test, aplica purga y
+embargo, y construye múltiples caminos de backtest. Permite estimar la distribución completa del
+rendimiento, no solo un punto.
+🎯 Entregable: Implementar Walk-Forward Validation para tu modelo de la Fase 2. Comparar el Sharpe
+Ratio walk-forward vs. el Sharpe del backtest simple. La diferencia entre ambos cuantifica tu overfitting.
+Anti-overfitting: Si el Sharpe walk-forward es menos de la mitad del Sharpe del backtest simple, tu
+modelo está sobreajustado. Simplifica antes de continuar.
+────────────────────────────────────────────────────────────────────────
+
+5.3 Tratamiento de Datos Desbalanceados en Mercados
+Los mercados financieros son inherentemente desbalanceados: los días de tendencia fuerte (señales de
+compra claras) son minoría frente a los días de rango o ruido. Un clasificador entrenado sin considerar
+esto aprenderá a predecir la clase mayoritaria (no operar) con alta accuracy pero sin generar ninguna
+operación útil.
+📖 Lecturas
+
+• Bagnato — Datos desbalanceados (p. 73-97)
+Técnicas a dominar:
+•
+•
+
+Diagnóstico: calcular la proporción de clases. Si tienes 90% clase 0 y 10% clase 1, un modelo que
+prediga siempre 0 tiene 90% accuracy pero 0% utilidad.
+Ponderación de clases (class_weight='balanced' en scikit-learn): asigna mayor peso a la clase
+minoritaria en la función de pérdida.
+
+•
+•
+•
+
+Sobremuestreo sintético (SMOTE): genera muestras artificiales de la clase minoritaria. Útil pero
+riesgoso en series temporales — puede crear datos temporalmente imposibles.
+Submuestreo aleatorio: reducir la clase mayoritaria. Pierde datos pero es más seguro que SMOTE
+para series temporales.
+Ajuste del umbral de decisión: en lugar de manipular los datos, ajustar el punto de corte de la
+probabilidad predicha usando la curva Precision-Recall.
+
+🎯 Entregable: Reentrena tu mejor modelo de la Fase 2 con ponderación de clases. Compara
+precision/recall/F1 antes y después. Evalúa el impacto en el número de señales generadas y en la calidad
+de esas señales.
+Anti-overfitting: SMOTE en series temporales puede generar puntos de datos que no respetan la
+secuencia temporal. Si usas SMOTE, aplícalo SOLO dentro de cada pliegue de entrenamiento, NUNCA
+antes de dividir train/test.
+
+6. Fase 4 — Series Temporales y Modelos Autorregresivos
+Objetivo: Modelar la naturaleza secuencial y dependiente del tiempo de los datos financieros, utilizando
+tanto modelos estadísticos clásicos como redes neuronales.
+
+6.1 Modelos ARMA y Arbitraje Estadístico
+Los modelos autorregresivos son la herramienta clásica para series temporales. ARMA (AutoRegressive
+Moving Average) captura dos componentes: la dependencia del valor actual con valores pasados (AR) y
+la dependencia con errores pasados (MA). En trading, estos modelos se usan para mean reversion y
+arbitraje estadístico.
+📖 Lecturas
+
+• Inglese — Cap. 7: Arbitraje estadístico (Parte 2)
+• Inglese — Cap. 8: Modelos de medias móviles autorregresivas ARMA (Parte 2)
+Conceptos clave a dominar:
+•
+•
+•
+•
+•
+
+Estacionariedad: requisito fundamental para ARMA. Los precios no son estacionarios; los
+retornos logarítmicos sí (generalmente). Test ADF (Augmented Dickey-Fuller) para verificar.
+Diferenciación: transformar precios en retornos (primera diferencia) o en retornos de retornos
+(segunda diferencia) para lograr estacionariedad → ARIMA.
+Selección de orden (p, q): usar ACF y PACF para identificar los lags relevantes, y AIC/BIC para
+seleccionar el modelo más parsimonioso.
+Cointegración: dos series no estacionarias cuya combinación lineal sí es estacionaria. Base del
+arbitraje de pares (pairs trading).
+Test de Engle-Granger para verificar cointegración entre dos activos.
+
+🎯 Entregable: Modelo ARIMA para retornos de tu activo. Evaluar residuos con Ljung-Box. Si operas
+múltiples activos: test de cointegración para identificar pares.
+────────────────────────────────────────────────────────────────────────
+
+6.2 Redes Recurrentes para Series Financieras
+Las redes neuronales recurrentes (RNN) y su variante LSTM (Long Short-Term Memory) pueden capturar
+dependencias temporales no lineales que ARMA no puede. Sin embargo, son significativamente más
+propensas al overfitting debido a su alta capacidad, por lo que requieren disciplina rigurosa en su
+aplicación.
+📖 Lecturas
+
+• Bagnato — Redes Neuronales Artificiales y Aprendizaje Profundo (p. 167-176)
+• Bagnato — Pronóstico de Series Temporales con Redes Neuronales (p. 217-253)
+• Inglese — Parte 3: Red Neuronal Profunda DNN y Red Neuronal Recurrente RNN (Cap. 14-15)
+Conceptos clave a dominar:
+
+•
+•
+•
+•
+•
+
+Arquitectura RNN básica: por qué sufre de vanishing gradient en secuencias largas.
+LSTM: celdas de memoria con gates (input, forget, output) que resuelven el problema de
+dependencias a largo plazo.
+Preparación de datos: crear ventanas deslizantes (sliding windows) de features como input. El
+tamaño de la ventana es un hiperparámetro crítico.
+Regularización en redes: dropout entre capas, L2 weight decay, batch normalization.
+Early stopping con patience: monitorear la loss de validación y detener cuando deje de mejorar
+durante N épocas.
+
+🎯 Entregable: Modelo LSTM para predicción de dirección del mercado. Comparar contra Random
+Forest y Regresión Logística. Si LSTM no supera significativamente a Random Forest en walk-forward,
+usar Random Forest (principio de parsimonia).
+Anti-overfitting: Las redes neuronales tienen millones de parámetros y pueden memorizar cualquier
+dataset financiero. Si tu LSTM tiene 98% accuracy en train y 51% en walk-forward test, elimina capas o
+reduce neuronas hasta que la brecha se cierre, aunque el accuracy de train baje.
+
+7. Fase 5 — Gestión de Riesgos y Backtesting Estadístico
+Objetivo: Validar el modelo con rigor financiero real. Un modelo con 60% de accuracy puede ser rentable
+con buena gestión monetaria, y un modelo con 80% de accuracy puede ser ruinoso sin ella.
+
+7.1 Gestión de Riesgos y Optimización de Cartera
+El modelo predictivo de la Fase 2 genera señales. Este módulo decide cuánto capital asignar a cada señal
+y cómo limitar las pérdidas. Sin gestión de riesgos, incluso un modelo perfecto puede destruir una cuenta
+con una sola racha de pérdidas.
+📖 Lecturas
+
+• Inglese — Cap. 3: Optimización de la cartera estática (Parte 1)
+• Inglese — Cap. 4: Gestión táctica de la cartera (Parte 1)
+• Inglese — Cap. 5: Gestión de riesgos (Parte 1)
+Conceptos clave a dominar:
+•
+•
+•
+
+•
+•
+
+Value at Risk (VaR): cuánto puedes perder en un día con un nivel de confianza dado. Métodos:
+histórico, paramétrico y simulación Monte Carlo.
+Expected Shortfall (CVaR): el promedio de las pérdidas que exceden el VaR. Más informativo que
+VaR para colas pesadas.
+Criterio de Kelly: fórmula para el tamaño óptimo de posición dado un modelo con probabilidad y
+ratio de ganancia/pérdida conocidos. Usar fracciones de Kelly (medio Kelly o cuarto Kelly) para
+mayor seguridad.
+Optimización de Markowitz: frontera eficiente media-varianza. Limitación: es extremadamente
+sensible a los inputs estimados (otro overfitting).
+Maximum Drawdown: la caída máxima desde un pico hasta un valle. Define tu tolerancia antes
+de operar: ¿15%? ¿25%? ¿50%?
+
+🎯 Entregable: Sistema de gestión monetaria que recibe señales del modelo y calcula tamaño de
+posición usando criterio de Kelly fraccionado. Incluir stop-loss dinámico basado en ATR o en VaR diario.
+────────────────────────────────────────────────────────────────────────
+
+7.2 Backtesting sin Data Snooping
+El backtesting es el momento de la verdad: simular cómo habría operado tu bot en datos históricos. Pero
+un backtest mal diseñado es peor que no hacer backtest, porque genera confianza falsa. El data snooping
+(mirar los datos muchas veces y ajustar hasta que 'funcione') es la raíz de la mayoría de los bots que
+fallan en vivo.
+📖 Lecturas
+
+• Inglese — Cap. 6: Backtesting (Parte 1)
+Protocolo de backtesting robusto:
+
+•
+
+•
+•
+•
+•
+
+Regla 1: Triple partición temporal. Dividir datos en tres conjuntos cronológicos: Entrenamiento
+(60%), Validación (20%) para ajustar hiperparámetros, Test (20%) para la evaluación final. El
+conjunto de test se toca UNA SOLA VEZ.
+Regla 2: Costos realistas. Incluir spread, comisiones, slippage y swap en la simulación. Un bot
+que gana 5 pips promedio no sobrevive un spread de 3 pips.
+Regla 3: No iterar sobre el test set. Si modificas el modelo después de ver el test set, estás
+haciendo overfitting al test set. Registra cada iteración en un log.
+Regla 4: Walk-forward final. Ejecutar tu mejor modelo con walk-forward en el conjunto de test.
+Si el Sharpe cae más del 50% respecto a validación, hay sobreajuste residual.
+Regla 5: Deflated Sharpe Ratio. Aplicar la corrección del Deflated Sharpe Ratio (López de Prado):
+ajusta el Sharpe observado por el número de estrategias que probaste antes de llegar a esta.
+
+🎯 Entregable: Backtest completo con walk-forward, costos incluidos, y reporte de: Sharpe Ratio
+(ajustado y sin ajustar), Maximum Drawdown, Win Rate, Profit Factor, número de operaciones, y
+Deflated Sharpe Ratio.
+
+8. Fase 6 — Ingeniería de Características y Pipeline
+Objetivo: Diseñar features robustas y generalizables que alimenten al modelo, y reducir la
+dimensionalidad para evitar la maldición de la dimensionalidad.
+
+8.1 Feature Engineering Financiero
+Las features (variables predictoras) son el input de tu modelo. La calidad de las features importa más que
+la complejidad del modelo. Un Random Forest con 5 features bien diseñadas supera a una red neuronal
+profunda con 200 features ruidosas. Inglese dedica una sección específica a esto en el contexto
+financiero.
+📖 Lecturas
+
+• Inglese — Ingeniería de características y objetivos (Parte 3, Cap. 10-11)
+• Inglese — Support Vector Machine SVM (Parte 3)
+Principios de diseño de features para trading:
+•
+•
+•
+•
+•
+
+Usar retornos (logarítmicos o porcentuales), no precios absolutos. Los precios no son
+estacionarios; los retornos sí.
+Features basadas en volatilidad: ATR normalizado, desviación estándar rolling, ratio de
+volatilidad intraday vs. interday.
+Features de momentum: retornos acumulados en N períodos, ratio del precio actual sobre la
+media móvil de N períodos.
+Features de microestructura: volumen relativo (volumen actual / media de volumen), tamaño
+del spread como % del precio.
+Features de régimen: indicadores de cambio estructural, clasificación de régimen con K-Means
+(ver Bruce & Gedeck Cap. 7, sección de K-Means).
+
+Anti-overfitting: Cada feature que añades es una dimensión más donde el modelo puede encontrar
+patrones espurios. Regla práctica: necesitas al menos 10-20 observaciones por feature para evitar la
+maldición de la dimensionalidad. Si tienes 500 datos de entrenamiento, no uses más de 25-50 features.
+────────────────────────────────────────────────────────────────────────
+
+8.2 Reducción Dimensional (PCA)
+Cuando tienes muchas features correlacionadas, PCA (Análisis de Componentes Principales) las
+transforma en un conjunto menor de componentes no correlacionados que capturan la mayor parte de
+la varianza. Esto reduce overfitting y ruido simultáneamente.
+📖 Lecturas
+
+• Bruce & Gedeck — Cap. 7: Aprendizaje no supervisado — sección de PCA (p. 277+)
+• Bagnato — K-Means (p. 110-124) — para detección de regímenes de mercado
+Aplicaciones específicas en trading:
+
+•
+•
+•
+
+PCA sobre features de momentum para reducir redundancia entre indicadores correlacionados
+(ej: RSI, Stochastic, Williams %R capturan el mismo fenómeno).
+K-Means para detectar regímenes de mercado (tendencia alcista, tendencia bajista, rango
+lateral). Entrenar modelos separados por régimen puede mejorar la generalización.
+Retener solo los componentes que expliquen ≥90% de la varianza. Los componentes restantes
+son probablemente ruido.
+
+🎯 Entregable: Pipeline completo de features: datos crudos → limpieza (Fase 1) → generación de
+features → PCA → features finales → modelo. Este pipeline debe ser una función reproducible que
+pueda ejecutarse tanto en backtest como en tiempo real.
+
+9. Fase 7 — Deployment en MetaTrader 5
+Objetivo: Conectar el pipeline completo (datos → features → modelo → señal → gestión monetaria →
+orden) a MetaTrader 5 para operación automática.
+
+9.1 Pipeline Python → MT5
+El libro de Inglese cubre la conexión técnica Python-MT5 en detalle. Este módulo integra todo el trabajo
+anterior en un sistema operativo.
+📖 Lecturas
+
+• Inglese — Cap. 16-17: Conexión con MT5 y Trading en vivo (Parte 3)
+Arquitectura del bot:
+•
+•
+
+•
+•
+
+Librería MetaTrader5 (pip install MetaTrader5): inicialización, login, obtención de datos de
+mercado en tiempo real, envío de órdenes.
+Loop principal: cada N minutos/horas → obtener datos recientes → ejecutar pipeline de features
+→ ejecutar modelo → si señal activa → calcular tamaño de posición → enviar orden → registrar
+en log.
+Manejo de errores: reconexión automática, verificación de ejecución de órdenes, alertas por
+Telegram/email si algo falla.
+Logging exhaustivo: cada decisión del bot debe quedar registrada con timestamp, features
+usadas, probabilidad predicha, tamaño de posición y resultado.
+
+────────────────────────────────────────────────────────────────────────
+
+9.2 Paper Trading y Validación en Vivo
+El paper trading (cuenta demo) es el último filtro anti-overfitting. Es la validación out-of-sample
+definitiva: datos que no existían cuando entrenaste el modelo.
+Protocolo de validación en vivo:
+•
+•
+•
+•
+•
+
+Duración mínima: Operar en cuenta demo durante un mínimo de 4-8 semanas (idealmente 3
+meses).
+Comparación cuantitativa: Comparar métricas reales vs. backtesting: Sharpe, drawdown, win
+rate, número de operaciones. Divergencias mayores al 30% indican sobreajuste residual.
+Migración gradual: Si el bot es rentable en demo durante el período establecido, migrar a cuenta
+real con el mínimo tamaño de lote posible. Escalar gradualmente.
+Kill switch: Definir a priori: ¿después de qué drawdown apago el bot y reevalúo? 10% es
+agresivo, 25% es conservador. Decide antes de operar.
+Reentrenamiento periódico: Reentrenar el modelo cada N semanas/meses con datos nuevos.
+Los mercados cambian de régimen y un modelo estático se degrada.
+
+🎯 Entregable: Bot funcionando en cuenta demo de MT5, con logging completo, kill switch programado
+y dashboard de métricas en tiempo real.
+
+Apéndice A: Checklist Anti-Overfitting Transversal
+Esta lista consolida todos los controles de sobreajuste distribuidos en el plan. Úsala como auditoría antes
+de cada decisión importante del pipeline.
+Datos
+•
+•
+•
+•
+
+¿Los datos están particionados cronológicamente (nunca aleatorio en series temporales)?
+¿Existe un conjunto de test que no se ha tocado?
+¿Se verificó que los retornos no asumen normalidad sin justificación?
+¿Se eliminaron datos corruptos sin introducir look-ahead bias?
+
+Features
+•
+•
+•
+•
+
+¿Se usan retornos en lugar de precios absolutos?
+¿El número de features cumple la regla 10-20 observaciones por feature?
+¿Se verificó feature importance con permutation importance?
+¿Se aplicó PCA o selección de features para eliminar redundancia?
+
+Modelo
+•
+•
+•
+•
+
+¿Se aplicó regularización (L1/L2/dropout/max_depth)?
+¿Se usó early stopping con monitoreo de validación?
+¿La brecha train accuracy vs. validation accuracy es menor al 15%?
+¿Se comparó contra un baseline simple (modelo naive, buy & hold)?
+
+Validación
+•
+•
+•
+•
+
+¿Se usó Walk-Forward Validation (no K-Fold estándar)?
+¿El Sharpe walk-forward es al menos 50% del Sharpe de train?
+¿Se aplicó corrección de pruebas múltiples si se probaron >3 configuraciones?
+¿Se calculó el Deflated Sharpe Ratio?
+
+Backtesting
+•
+•
+•
+
+¿Se incluyeron costos realistas (spread, comisión, slippage, swap)?
+¿El conjunto de test se usó UNA SOLA VEZ para la evaluación final?
+¿Se registró el número de estrategias/modelos probados antes del modelo final?
+
+Deployment
+•
+•
+•
+•
+
+¿Se realizó paper trading por un mínimo de 4 semanas?
+¿Las métricas de demo están dentro del 30% de las métricas de backtest?
+¿Existe un kill switch con drawdown máximo predefinido?
+¿Se programó reentrenamiento periódico del modelo?
+
+Apéndice B: Capítulos Excluidos y Justificación
+Los siguientes capítulos de tus libros han sido excluidos del plan de estudios por las razones indicadas.
+Esto no significa que carezcan de valor general, sino que no contribuyen directamente al objetivo
+específico de este plan: construir un bot de trading con control de overfitting.
+Libro
+
+Capítulo / Sección
+
+Razón de Exclusión
+
+Bagnato
+
+K-Nearest-Neighbor (p. 125+)
+
+KNN sufre en alta dimensionalidad y no
+escala bien. Computacionalmente costoso
+en predicción en tiempo real.
+
+Bagnato
+
+Naive Bayes (p. 140+)
+
+Asume independencia entre features,
+supuesto que se viola sistemáticamente
+en datos financieros correlacionados.
+
+Bagnato
+
+Sistemas de Recomendación (p.
+153+)
+
+Diseñados para filtrado colaborativo
+(Netflix, Amazon). Sin aplicación directa
+en trading algorítmico.
+
+Bagnato
+
+Clasificación de Imágenes (p. 254+)
+
+Redes convolucionales para imágenes.
+No aplica a datos tabulares financieros.
+(Nota: existe investigación de chart-as-image
+pero es experimental y propenso a overfitting.)
+
+Bagnato
+
+Detección de Objetos (p. 280+)
+
+Extensión de CNN. Mismo caso que
+Clasificación de Imágenes.
+
+Inglese
+
+Cap. 1-2: Prerrequisitos
+
+Asume que ya dominas Python, Pandas
+y conceptos financieros básicos.
+Revisar solo si hay lagunas.
+
+Capítulos incluidos parcialmente:
+Libro
+
+Capítulo / Sección
+
+Uso en el Plan
+
+Bruce & Gedeck
+
+Cap. 7: Aprendizaje no supervisado
+
+Solo PCA (reducción dimensional) y
+K-Means (detección de regímenes).
+Excluido: clustering jerárquico, DBSCAN.
+
+Bagnato
+
+K-Means (p. 110-124)
+
+Solo para detección de regímenes
+de mercado. No como modelo predictivo.
+
+Apéndice C: Cronograma Sugerido (16 Semanas)
+Estimación basada en dedicación de 10-15 horas semanales. Ajustar según disponibilidad real. Las fases
+son secuenciales y no deben solaparse: cada fase depende de los entregables de la anterior.
+Semana
+
+Fase
+
+Módulos
+
+Entregable Clave
+
+1-2
+
+Fase 1
+
+1.1 EDA + 1.2 Distribuciones
+
+Pipeline de limpieza de datos
+Análisis de distribución de retornos
+
+3
+
+Fase 1
+
+1.3 Pruebas de Hipótesis
+
+Framework de evaluación
+estadística
+
+4-5
+
+Fase 2
+
+2.1 Regresión + 2.2
+Clasificación
+
+Clasificador logístico binario
+con evaluación precision/recall
+
+6
+
+Fase 2
+
+2.3 Random Forest
+
+Modelo ensemble con feature
+importance
+
+7-8
+
+Fase 3
+
+3.1 Overfitting + 3.2
+Partición
++ 3.3 Desbalanceo
+
+Protocolo anti-overfitting
+implementado y documentado
+
+9-10
+
+Fase 4
+
+4.1 ARMA + 4.2 RNN/LSTM
+
+Modelo de series temporales
+validado con walk-forward
+
+11-12
+
+Fase 5
+
+5.1 Riesgos + 5.2 Backtesting
+
+Backtest completo con costos
+y Deflated Sharpe Ratio
+
+13-14
+
+Fase 6
+
+6.1 Features + 6.2 PCA
+
+Pipeline reproducible de features
+datos → limpieza → features →
+modelo
+
+15-16
+
+Fase 7
+
+7.1 MT5 + 7.2 Paper Trading
+
+Bot en cuenta demo con
+logging y kill switch
+
+Nota:
+Las semanas 17 en adelante son paper trading continuo. No pases a cuenta real hasta completar un
+mínimo de 4 semanas rentables consecutivas en demo. Si el bot no es rentable en demo, regresa a la
+Fase 3 y simplifica el modelo antes de añadir complejidad.
+
+Apéndice D: Lectura Complementaria Recomendada
+Estos textos no son obligatorios para el plan, pero elevan significativamente el rigor del bot. Ordenados
+por prioridad descendente:
+1. Advances in Financial Machine Learning — Marcos López de Prado (Wiley, 2018)
+El referente en anti-overfitting financiero. Capítulos prioritarios: Purged Cross-Validation, Triple Barrier
+Method, Feature Importance, Deflated Sharpe Ratio.
+2. Machine Learning for Algorithmic Trading — Stefan Jansen (Packt, 2nd ed. 2020)
+Guía práctica completa con código Python. Cubre alpha factors, backtesting con Zipline/Backtrader, y
+modelos de NLP para análisis de sentimiento.
+3. The Elements of Statistical Learning — Hastie, Tibshirani, Friedman (Springer, 2009)
+El tratado matemático definitivo sobre machine learning estadístico. No es un libro práctico, sino una
+referencia para cuando necesites entender la teoría detrás de un algoritmo a profundidad. Disponible
+gratuitamente en PDF.
+4. Quantitative Trading — Ernest P. Chan (Wiley, 2009)
+Enfoque práctico y conciso sobre mean reversion, momentum y gestión de riesgos. Excelente
+complemento para la Fase 5.
+────────────────────────────────────────────────────────────────────────
+
+Fin del documento.
+
+
