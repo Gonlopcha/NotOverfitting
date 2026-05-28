@@ -10,7 +10,7 @@
 
 ```mermaid
 graph TB
-    subgraph GUI["🖥️ Capa GUI (PyQt5 / PySide2)"]
+    subgraph GUI["🖥️ Capa GUI (PyQt5 / PySide6)"]
         MW["MainWindow"]
         DP["Panel: Datos"]
         PP["Panel: Pipeline"]
@@ -793,7 +793,7 @@ graph TB
 ## User Review Required
 
 > [!IMPORTANT]
-> **Framework GUI**: Se propone **PyQt5** por madurez y ecosistema de widgets. Alternativas: PySide2 (licencia LGPL), Tkinter (más simple pero menos potente), DearPyGui (GPU-accelerated). ¿Alguna preferencia?
+> **Framework GUI**: Se propone **PyQt5** por madurez y ecosistema de widgets. Alternativas: PySide6 (licencia LGPL), Tkinter (más simple pero menos potente), DearPyGui (GPU-accelerated). ¿Alguna preferencia?
 
 > [!IMPORTANT]
 > **Motor de Backtest**: Se diseñó un motor **event-driven propio**. Alternativa: usar `Backtrader` o `vectorbt` como base y extenderlos. El motor propio da control total pero requiere más desarrollo. ¿Preferencia?

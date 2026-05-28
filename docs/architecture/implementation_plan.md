@@ -10,7 +10,7 @@
 
 ```mermaid
 graph TB
-    subgraph GUI["🖥️ Capa GUI (PyQt5 / PySide2)"]
+    subgraph GUI["🖥️ Capa GUI (PyQt5 / PySide6)"]
         MW["MainWindow"]
         DP["Panel: Datos"]
         PP["Panel: Pipeline"]
@@ -179,17 +179,18 @@ graph LR
 
 **Eventos clave del sistema:**
 
-| Evento | Emisor | Payload |
-|---|---|---|
-| `data.download.started` | DataManager | `{symbol, timeframe}` |
-| `data.download.completed` | DataManager | `{symbol, timeframe, rows}` |
-| `data.download.error` | DataManager | `{symbol, error}` |
-| `pipeline.step.completed` | Orchestrator | `{step_name, shape}` |
-| `pipeline.completed` | Orchestrator | `{features_shape, time_elapsed}` |
-| `backtest.progress` | BacktestEngine | `{pct_complete, current_date}` |
-| `backtest.completed` | BacktestEngine | `{metrics_dict}` |
-| `optimization.trial` | OptEngine | `{trial_n, params, score}` |
-| `log.message` | Logger | `{level, message, module}` |
+
+| Evento                    | Emisor         | Payload                          |
+| ------------------------- | -------------- | -------------------------------- |
+| `data.download.started`   | DataManager    | `{symbol, timeframe}`            |
+| `data.download.completed` | DataManager    | `{symbol, timeframe, rows}`      |
+| `data.download.error`     | DataManager    | `{symbol, error}`                |
+| `pipeline.step.completed` | Orchestrator   | `{step_name, shape}`             |
+| `pipeline.completed`      | Orchestrator   | `{features_shape, time_elapsed}` |
+| `backtest.progress`       | BacktestEngine | `{pct_complete, current_date}`   |
+| `backtest.completed`      | BacktestEngine | `{metrics_dict}`                 |
+| `optimization.trial`      | OptEngine      | `{trial_n, params, score}`       |
+| `log.message`             | Logger         | `{level, message, module}`       |
 
 ### 3.2 ConfigManager
 
@@ -241,15 +242,16 @@ Registry
 
 Ubicado en `core/` como un Singleton con control de concurrencia (`threading.Lock()`). Dado que la librería `MetaTrader5` maneja un estado global en el intérprete de Python, este componente centraliza **todas** las llamadas a la API de MetaTrader (ya sea descarga de históricos desde `data` o envío de órdenes desde `live`). Esto evita desconexiones, bloqueos o colisiones cuando el bot opere en tiempo real.
 
-| Método | Descripción |
-|---|---|
-| `connect(login, password, server)` | Inicializa conexión MT5 con lock |
-| `disconnect()` | Cierra conexión limpiamente |
+
+| Método                                | Descripción                                  |
+| -------------------------------------- | --------------------------------------------- |
+| `connect(login, password, server)`     | Inicializa conexión MT5 con lock             |
+| `disconnect()`                         | Cierra conexión limpiamente                  |
 | `download_ohlcv(symbol, tf, from, to)` | Descarga datos OHLCV de forma segura con lock |
-| `get_symbols()` | Lista símbolos disponibles en el broker |
-| `get_tick_data(symbol, from, to)` | Descarga datos tick-by-tick |
-| `send_order(request)` | Envía orden al mercado (encolada vía lock) |
-| `get_positions()` | Consulta posiciones abiertas |
+| `get_symbols()`                        | Lista símbolos disponibles en el broker      |
+| `get_tick_data(symbol, from, to)`      | Descarga datos tick-by-tick                   |
+| `send_order(request)`                  | Envía orden al mercado (encolada vía lock)  |
+| `get_positions()`                      | Consulta posiciones abiertas                  |
 
 ---
 
@@ -267,7 +269,7 @@ sequenceDiagram
 
     GUI->>DM: download(symbol, tf, from, to)
     DM->>CACHE: has_data(symbol, tf, from, to)?
-    
+  
     alt Cache Hit (datos completos)
         CACHE-->>DM: cached DataFrame
     else Cache Miss o Parcial
@@ -277,19 +279,21 @@ sequenceDiagram
         DM->>DB: store(symbol, tf, DataFrame)
         DM->>CACHE: update(symbol, tf, DataFrame)
     end
-    
+  
     DM-->>GUI: DataFrame completo
     DM->>EVT: emit("data.download.completed")
 ```
 
 ### 4.2 Almacenamiento Dual
 
-| Componente | Formato | Propósito |
-|---|---|---|
-| **Metadata** | SQLite | Registro de qué datos existen, rangos de fechas, checksums |
-| **Datos OHLCV** | Parquet (particionado) | Datos reales, comprimidos, lectura rápida con pandas |
+
+| Componente      | Formato                | Propósito                                                  |
+| --------------- | ---------------------- | ----------------------------------------------------------- |
+| **Metadata**    | SQLite                 | Registro de qué datos existen, rangos de fechas, checksums |
+| **Datos OHLCV** | Parquet (particionado) | Datos reales, comprimidos, lectura rápida con pandas       |
 
 Estructura en disco:
+
 ```
 data_store/
 ├── metadata.db                     # SQLite: catálogo de datos
@@ -379,18 +383,19 @@ PipelineOrchestrator
 @register_feature("rsi")
 class RSIFeature(FeatureBase):
     """Relative Strength Index"""
-    
+  
     params:
       - period: int = 14
-    
+  
     depends_on: ["close"]
-    
+  
     def compute(df) → Series:
         # Cálculo del RSI
         return rsi_series
 ```
 
 Ventajas:
+
 - **Auto-discovery**: El Registry encuentra automáticamente todas las features registradas
 - **Declarativo**: Cada feature declara sus dependencias y parámetros
 - **Extensible**: Agregar una feature nueva = crear 1 archivo, 0 modificaciones en otros módulos
@@ -428,7 +433,7 @@ graph LR
     --> MODEL["Model.predict()"]
     --> SIG["SignalGenerator"]
     --> DEC{{"Decisión"}}
-    
+  
     DEC -->|prob > 0.6| BUY["🟢 BUY"]
     DEC -->|prob < 0.4| SELL["🔴 SELL"]
     DEC -->|0.4 ≤ prob ≤ 0.6| HOLD["⚪ HOLD"]
@@ -436,13 +441,14 @@ graph LR
 
 ### 6.3 ModelManager
 
-| Responsabilidad | Descripción |
-|---|---|
-| `train(X, y, model_type)` | Entrena modelo (XGBoost, RF, LightGBM, etc.) |
-| `predict(X)` | Predicción con modelo entrenado |
-| `save(path)` | Serializa modelo + metadatos |
-| `load(path)` | Carga modelo serializado |
-| `get_importance()` | Feature importance del modelo |
+
+| Responsabilidad            | Descripción                                   |
+| -------------------------- | ---------------------------------------------- |
+| `train(X, y, model_type)`  | Entrena modelo (XGBoost, RF, LightGBM, etc.)   |
+| `predict(X)`               | Predicción con modelo entrenado               |
+| `save(path)`               | Serializa modelo + metadatos                   |
+| `load(path)`               | Carga modelo serializado                       |
+| `get_importance()`         | Feature importance del modelo                  |
 | `cross_validate(X, y, cv)` | Validación cruzada temporal (TimeSeriesSplit) |
 
 ---
@@ -463,17 +469,17 @@ sequenceDiagram
         ST->>ST: pipeline.transform(bar)
         ST->>ST: model.predict(features)
         ST-->>BE: Signal(BUY/SELL/HOLD)
-        
+      
         alt Signal != HOLD
             BE->>PF: execute(signal, price, size)
             PF->>PF: update_equity()
             PF-->>BE: TradeResult
             BE->>ST: on_trade(result)
         end
-        
+      
         BE->>EVT: emit("backtest.progress", pct)
     end
-    
+  
     BE->>PM: calculate(trade_log, equity_curve)
     PM-->>BE: MetricsReport
     BE->>EVT: emit("backtest.completed", metrics)
@@ -481,13 +487,14 @@ sequenceDiagram
 
 ### 7.2 Métricas Calculadas
 
-| Categoría | Métricas |
-|---|---|
-| **Retorno** | Total Return, CAGR, Monthly Returns |
-| **Riesgo** | Max Drawdown, Volatilidad, VaR, CVaR |
-| **Ratios** | Sharpe, Sortino, Calmar, Profit Factor |
-| **Trading** | Win Rate, Avg Win/Loss, Max Consecutive Losses |
-| **Estadísticas** | Trades totales, Exposure Time, Avg Duration |
+
+| Categoría        | Métricas                                      |
+| ----------------- | ---------------------------------------------- |
+| **Retorno**       | Total Return, CAGR, Monthly Returns            |
+| **Riesgo**        | Max Drawdown, Volatilidad, VaR, CVaR           |
+| **Ratios**        | Sharpe, Sortino, Calmar, Profit Factor         |
+| **Trading**       | Win Rate, Avg Win/Loss, Max Consecutive Losses |
+| **Estadísticas** | Trades totales, Exposure Time, Avg Duration    |
 
 ### 7.3 Optimización
 
@@ -501,7 +508,7 @@ graph TB
         G3["Ranking por métrica objetivo"]
         G1 --> G2 --> G3
     end
-    
+  
     subgraph OPTUNA["Optuna (Bayesiano)"]
         O1["Definir espacio de búsqueda"]
         O2["TPE sugiere parámetros"]
@@ -564,6 +571,7 @@ Out-of-Sample combinado:        [=T1=][=T2=][=T3=]
 ### 8.2 Detalle de cada Panel
 
 #### 📊 Panel de Datos
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  MT5 Conexión           │  Descarga de Datos                │
@@ -586,6 +594,7 @@ Out-of-Sample combinado:        [=T1=][=T2=][=T3=]
 ```
 
 #### 🔬 Panel de Pipeline
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  Configuración del Pipeline                                  │
@@ -613,6 +622,7 @@ Out-of-Sample combinado:        [=T1=][=T2=][=T3=]
 ```
 
 #### 📈 Panel de Backtest
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  Configuración                │  Ejecución                   │
@@ -635,6 +645,7 @@ Out-of-Sample combinado:        [=T1=][=T2=][=T3=]
 ```
 
 #### ⚡ Panel de Optimización
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  Modo: (●) Optuna Bayesiano  ( ) Grid Search                │
@@ -666,15 +677,16 @@ Out-of-Sample combinado:        [=T1=][=T2=][=T3=]
 
 ## 9. Patrones de Diseño Clave
 
-| Patrón | Dónde | Por qué |
-|---|---|---|
-| **Observer / Pub-Sub** | EventBus | Desacopla GUI de lógica. Los paneles reaccionan a eventos sin conocer quién los emite |
-| **Strategy Pattern** | StrategyBase | Permite intercambiar estrategias sin cambiar el engine |
-| **Registry + Decorators** | Features, Strategies | Auto-discovery, extensibilidad sin modificar código existente |
-| **Pipeline / Chain** | PipelineOrchestrator | Composición flexible de pasos, reproducibilidad fit/transform |
-| **Repository** | DataStore | Abstrae el almacenamiento (hoy Parquet, mañana podría ser PostgreSQL) |
-| **Singleton** | ConfigManager, Logger | Un solo punto de configuración y logging |
-| **Template Method** | PipelineStep.fit_transform | Estructura fija con implementación variable por paso |
+
+| Patrón                   | Dónde                     | Por qué                                                                                |
+| ------------------------- | -------------------------- | --------------------------------------------------------------------------------------- |
+| **Observer / Pub-Sub**    | EventBus                   | Desacopla GUI de lógica. Los paneles reaccionan a eventos sin conocer quién los emite |
+| **Strategy Pattern**      | StrategyBase               | Permite intercambiar estrategias sin cambiar el engine                                  |
+| **Registry + Decorators** | Features, Strategies       | Auto-discovery, extensibilidad sin modificar código existente                          |
+| **Pipeline / Chain**      | PipelineOrchestrator       | Composición flexible de pasos, reproducibilidad fit/transform                          |
+| **Repository**            | DataStore                  | Abstrae el almacenamiento (hoy Parquet, mañana podría ser PostgreSQL)                 |
+| **Singleton**             | ConfigManager, Logger      | Un solo punto de configuración y logging                                               |
+| **Template Method**       | PipelineStep.fit_transform | Estructura fija con implementación variable por paso                                   |
 
 ---
 
@@ -725,15 +737,15 @@ graph TB
     DOWNLOAD --> CONFIG_PIPE["3. Configurar Pipeline\n(Panel Pipeline)"]
     CONFIG_PIPE --> RUN_PIPE["4. Ejecutar Pipeline\nLimpieza → Features → PCA"]
     RUN_PIPE --> REVIEW["5. Revisar Features\nImportance, Varianza"]
-    
+  
     REVIEW --> BACKTEST["6. Ejecutar Backtest\n(Panel Backtest)"]
     BACKTEST --> METRICS["7. Analizar Métricas\nSharpe, MaxDD, etc."]
-    
+  
     METRICS --> OPTIMIZE{"¿Optimizar?"}
     OPTIMIZE -->|Sí| OPT["8. Optimización\nOptuna / Grid"]
     OPT --> WF["9. Walk-Forward\nValidación OOS"]
     WF --> METRICS
-    
+  
     OPTIMIZE -->|No| SAVE["10. Guardar Pipeline\n+ Modelo entrenado"]
     SAVE --> LIVE["11. Trading Live\n(Futuro)"]
 ```
@@ -743,58 +755,64 @@ graph TB
 ## 12. Plan de Implementación por Fases
 
 ### Fase 1 — Fundación (Core + Data)
-- [ ] `src/core/` — ConfigManager, EventBus, Logger, Registry, Exceptions, MT5Connector (Thread-Safe)
-- [ ] `src/data/` — DataManager, DataStore, CacheManager
-- [ ] `config/` — default.yaml, logging.yaml
-- [ ] Tests unitarios de Core y Data
+
+- [ ]  `src/core/` — ConfigManager, EventBus, Logger, Registry, Exceptions, MT5Connector (Thread-Safe)
+- [ ]  `src/data/` — DataManager, DataStore, CacheManager
+- [ ]  `config/` — default.yaml, logging.yaml
+- [ ]  Tests unitarios de Core y Data
 
 ### Fase 2 — Pipeline
-- [ ] `src/pipeline/base.py` — PipelineStep ABC
-- [ ] `src/pipeline/cleaner.py` — Fase 1 de limpieza
-- [ ] `src/pipeline/feature_generator.py` — Motor de features con decoradores
-- [ ] `src/pipeline/features/` — Features técnicas, estadísticas, microestructura
-- [ ] `src/pipeline/pca_transformer.py` — PCA con fit/transform
-- [ ] `src/pipeline/orchestrator.py` — Pipeline reproducible
-- [ ] Tests de reproducibilidad (same input → same output)
+
+- [ ]  `src/pipeline/base.py` — PipelineStep ABC
+- [ ]  `src/pipeline/cleaner.py` — Fase 1 de limpieza
+- [ ]  `src/pipeline/feature_generator.py` — Motor de features con decoradores
+- [ ]  `src/pipeline/features/` — Features técnicas, estadísticas, microestructura
+- [ ]  `src/pipeline/pca_transformer.py` — PCA con fit/transform
+- [ ]  `src/pipeline/orchestrator.py` — Pipeline reproducible
+- [ ]  Tests de reproducibilidad (same input → same output)
 
 ### Fase 3 — Estrategia + Backtest
-- [ ] `src/strategy/base.py` — StrategyBase ABC
-- [ ] `src/strategy/model_manager.py` — Train/predict/serialize
-- [ ] `src/strategy/signal_generator.py` — Lógica de señales
-- [ ] `src/backtest/engine.py` — Motor event-driven
-- [ ] `src/backtest/portfolio.py` — Gestión de posiciones
-- [ ] `src/backtest/metrics.py` — Cálculo de métricas
-- [ ] Tests de backtest con datos conocidos
+
+- [ ]  `src/strategy/base.py` — StrategyBase ABC
+- [ ]  `src/strategy/model_manager.py` — Train/predict/serialize
+- [ ]  `src/strategy/signal_generator.py` — Lógica de señales
+- [ ]  `src/backtest/engine.py` — Motor event-driven
+- [ ]  `src/backtest/portfolio.py` — Gestión de posiciones
+- [ ]  `src/backtest/metrics.py` — Cálculo de métricas
+- [ ]  Tests de backtest con datos conocidos
 
 ### Fase 4 — GUI
-- [ ] `src/gui/main_window.py` — Ventana principal con tabs
-- [ ] `src/gui/widgets/data_panel.py` — Conexión MT5 + descarga
-- [ ] `src/gui/widgets/pipeline_panel.py` — Configuración del pipeline
-- [ ] `gui/widgets/backtest_panel.py` — Ejecución de backtest
-- [ ] `gui/widgets/results_panel.py` — Visualización de resultados
-- [ ] `gui/widgets/chart_widget.py` — Gráfico de velas
-- [ ] `gui/styles/dark_theme.qss` — Tema oscuro
-- [ ] Integración completa GUI ↔ Lógica vía EventBus
+
+- [ ]  `src/gui/main_window.py` — Ventana principal con tabs
+- [ ]  `src/gui/widgets/data_panel.py` — Conexión MT5 + descarga
+- [ ]  `src/gui/widgets/pipeline_panel.py` — Configuración del pipeline
+- [ ]  `gui/widgets/backtest_panel.py` — Ejecución de backtest
+- [ ]  `gui/widgets/results_panel.py` — Visualización de resultados
+- [ ]  `gui/widgets/chart_widget.py` — Gráfico de velas
+- [ ]  `gui/styles/dark_theme.qss` — Tema oscuro
+- [ ]  Integración completa GUI ↔ Lógica vía EventBus
 
 ### Fase 5 — Optimización + Polish
-- [ ] `backtest/optimization.py` — Grid + Optuna
-- [ ] `backtest/walk_forward.py` — Walk-forward validation
-- [ ] `gui/widgets/optimization_panel.py` — Panel de optimización
-- [ ] `gui/widgets/log_widget.py` — Visor de logs
-- [ ] Documentación de usuario
-- [ ] Tests de integración end-to-end
+
+- [ ]  `backtest/optimization.py` — Grid + Optuna
+- [ ]  `backtest/walk_forward.py` — Walk-forward validation
+- [ ]  `gui/widgets/optimization_panel.py` — Panel de optimización
+- [ ]  `gui/widgets/log_widget.py` — Visor de logs
+- [ ]  Documentación de usuario
+- [ ]  Tests de integración end-to-end
 
 ### Fase 6 — Live Trading (Futura)
-- [ ] `live/executor.py` — Ejecución de órdenes
-- [ ] `live/risk_manager.py` — Gestión de riesgo
-- [ ] `live/monitor.py` — Monitor de posiciones
+
+- [ ]  `live/executor.py` — Ejecución de órdenes
+- [ ]  `live/risk_manager.py` — Gestión de riesgo
+- [ ]  `live/monitor.py` — Monitor de posiciones
 
 ---
 
 ## User Review Required
 
 > [!IMPORTANT]
-> **Framework GUI**: Se propone **PyQt5** por madurez y ecosistema de widgets. Alternativas: PySide2 (licencia LGPL), Tkinter (más simple pero menos potente), DearPyGui (GPU-accelerated). ¿Alguna preferencia?
+> **Framework GUI**: Se propone **PyQt5** por madurez y ecosistema de widgets. Alternativas: PySide6 (licencia LGPL), Tkinter (más simple pero menos potente), DearPyGui (GPU-accelerated). ¿Alguna preferencia?
 
 > [!IMPORTANT]
 > **Motor de Backtest**: Se diseñó un motor **event-driven propio**. Alternativa: usar `Backtrader` o `vectorbt` como base y extenderlos. El motor propio da control total pero requiere más desarrollo. ¿Preferencia?

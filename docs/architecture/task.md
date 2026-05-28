@@ -16,18 +16,18 @@ Esta es nuestra hoja de ruta viva. Iremos marcando las tareas según avancemos:
 - `[x]` Crear `requirements.txt`
 
 ### 2. Capa Core (Infraestructura)
-- `[ ]` Implementar `src/core/exceptions.py` (Excepciones personalizadas)
-- `[ ]` Implementar `src/core/logger.py` (Sistema de registro centralizado)
-- `[ ]` Implementar `src/core/config_manager.py` (Carga y validación de configs)
-- `[ ]` Implementar `src/core/event_bus.py` (Sistema Pub/Sub para la GUI)
-- `[ ]` Implementar `src/core/registry.py` (Auto-descubrimiento de features/estrategias)
-- `[ ]` Implementar `src/core/mt5_connector.py` (Singleton Thread-Safe para MetaTrader5)
+- `[x]` Implementar `src/core/exceptions.py` (Excepciones personalizadas)
+- `[x]` Implementar `src/core/logger.py` (Sistema de registro centralizado)
+- `[x]` Implementar `src/core/config_manager.py` (Carga y validación de configs)
+- `[x]` Implementar `src/core/event_bus.py` (Sistema Pub/Sub para la GUI)
+- `[x]` Implementar `src/core/registry.py` (Auto-descubrimiento de features/estrategias)
+- `[x]` Implementar `src/core/mt5_connector.py` (Singleton Thread-Safe para MetaTrader5)
 
 ### 3. Capa Data (Gestión de Información)
-- `[ ]` Implementar `src/data/schemas.py` (Validación de datos con Pydantic)
-- `[ ]` Implementar `src/data/cache_manager.py` (Sistema de caché inteligente)
-- `[ ]` Implementar `src/data/data_store.py` (Almacenamiento Parquet/SQLite)
-- `[ ]` Implementar `src/data/data_manager.py` (Orquestador de descargas y validación)
+- `[x]` Implementar `src/data/schemas.py` (Validación de datos con Pydantic)
+- `[x]` Implementar `src/data/cache_manager.py` (Sistema de caché inteligente)
+- `[x]` Implementar `src/data/data_store.py` (Almacenamiento Parquet/SQLite)
+- `[x]` Implementar `src/data/data_manager.py` (Orquestador de descargas y validación)
 
 ### 4. Pruebas y Validación (Fase 1)
 - `[ ]` Tests unitarios de la capa Core
