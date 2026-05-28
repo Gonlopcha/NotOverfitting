@@ -24,10 +24,10 @@ graph TB
         LOG["Logger"]
         EVT["EventBus"]
         REG["Registry"]
+        MT5["MT5Connector (Thread-Safe)"]
     end
 
     subgraph DATA["📊 Capa de Datos"]
-        MT5["MT5Connector"]
         DM["DataManager"]
         CACHE["CacheManager"]
         DB["DataStore (SQLite/Parquet)"]
@@ -87,11 +87,11 @@ NotOverfitting/
 │   ├── event_bus.py                # Pub/Sub desacoplado entre módulos
 │   ├── logger.py                   # Wrapper de logging con rotación
 │   ├── registry.py                 # Registro dinámico de estrategias/features
+│   ├── mt5_connector.py            # Singleton Thread-Safe para MT5 (descarga y órdenes)
 │   └── exceptions.py               # Excepciones custom del sistema
 │
 ├── data/                           # 📊 Capa de Datos
 │   ├── __init__.py
-│   ├── mt5_connector.py            # Wrapper de MetaTrader5 (login, download, orders)
 │   ├── data_manager.py             # Orquesta descarga, validación, almacenamiento
 │   ├── cache_manager.py            # Cache inteligente con invalidación por fecha
 │   ├── data_store.py               # Persistencia (SQLite metadata + Parquet datos)
@@ -236,25 +236,25 @@ Registry
 > [!TIP]
 > El patrón Registry + decoradores permite a cualquier desarrollador agregar nuevas features o estrategias simplemente creando un archivo nuevo con un decorador `@register_feature("nombre")`, sin tocar ningún otro módulo.
 
----
+### 3.4 MT5Connector (Thread-Safe)
 
-## 4. Capa de Datos — Conexión con MetaTrader 5
-
-### 4.1 MT5Connector
-
-Wrapper sobre la librería `MetaTrader5` de Python. Responsabilidades:
+Ubicado en `core/` como un Singleton con control de concurrencia (`threading.Lock()`). Dado que la librería `MetaTrader5` maneja un estado global en el intérprete de Python, este componente centraliza **todas** las llamadas a la API de MetaTrader (ya sea descarga de históricos desde `data` o envío de órdenes desde `live`). Esto evita desconexiones, bloqueos o colisiones cuando el bot opere en tiempo real.
 
 | Método | Descripción |
 |---|---|
-| `connect(login, password, server)` | Inicializa conexión MT5 |
+| `connect(login, password, server)` | Inicializa conexión MT5 con lock |
 | `disconnect()` | Cierra conexión limpiamente |
-| `download_ohlcv(symbol, timeframe, date_from, date_to)` | Descarga datos OHLCV como DataFrame |
+| `download_ohlcv(symbol, tf, from, to)` | Descarga datos OHLCV de forma segura con lock |
 | `get_symbols()` | Lista símbolos disponibles en el broker |
-| `get_tick_data(symbol, date_from, date_to)` | Descarga datos tick-by-tick |
-| `send_order(request)` | Envía orden al mercado (futuro: live) |
+| `get_tick_data(symbol, from, to)` | Descarga datos tick-by-tick |
+| `send_order(request)` | Envía orden al mercado (encolada vía lock) |
 | `get_positions()` | Consulta posiciones abiertas |
 
-### 4.2 Flujo de Datos
+---
+
+## 4. Capa de Datos — Gestión de la Información
+
+### 4.1 Flujo de Datos
 
 ```mermaid
 sequenceDiagram
@@ -281,7 +281,7 @@ sequenceDiagram
     DM->>EVT: emit("data.download.completed")
 ```
 
-### 4.3 Almacenamiento Dual
+### 4.2 Almacenamiento Dual
 
 | Componente | Formato | Propósito |
 |---|---|---|
@@ -742,8 +742,8 @@ graph TB
 ## 12. Plan de Implementación por Fases
 
 ### Fase 1 — Fundación (Core + Data)
-- [ ] `core/` — ConfigManager, EventBus, Logger, Registry, Exceptions
-- [ ] `data/` — MT5Connector, DataManager, DataStore, CacheManager
+- [ ] `core/` — ConfigManager, EventBus, Logger, Registry, Exceptions, MT5Connector (Thread-Safe)
+- [ ] `data/` — DataManager, DataStore, CacheManager
 - [ ] `config/` — default.yaml, logging.yaml
 - [ ] Tests unitarios de Core y Data
 
