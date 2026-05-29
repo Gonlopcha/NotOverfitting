@@ -37,7 +37,7 @@ def apply_triple_barrier(df: pd.DataFrame,
     closes = df['close'].values
     highs = df['high'].values
     lows = df['low'].values
-    atrs = df[atr_col].fillna(method='bfill').values
+    atrs = df[atr_col].bfill().values
     
     n = len(df)
     

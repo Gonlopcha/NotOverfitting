@@ -64,4 +64,8 @@ class FeatureGenerator(PipelineStep):
             except Exception as e:
                 logger.error(f"Error aplicando feature '{feat_name}': {e}")
                 
+        # Llenar los NaNs generados por las ventanas móviles (RSI, ATR, etc.) 
+        # hacia atrás (bfill) para que el PCATransformer no reciba NAs en las primeras filas.
+        df = df.bfill()
+        
         return df
