@@ -37,7 +37,7 @@ class SignalGenerator:
             signals = np.zeros(len(probabilities), dtype=int)
             signals[prob_long >= self.buy_threshold] = 1
             if self.enable_short:
-                signals[prob_short >= self.buy_threshold] = -1
+                signals[prob_short >= self.sell_threshold] = -1
             return pd.Series(signals, name='signal', index=probabilities.index)
             
         elif len(probabilities.shape) == 2:
