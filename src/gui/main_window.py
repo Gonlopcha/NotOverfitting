@@ -4,6 +4,7 @@ from src.gui.widgets.data_panel import DataPanel
 from src.gui.widgets.pipeline_panel import PipelinePanel
 from src.gui.widgets.backtest_panel import BacktestPanel
 from src.gui.widgets.results_panel import ResultsPanel
+from src.gui.widgets.optimization_panel import OptimizationPanel
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -41,6 +42,10 @@ class MainWindow(QMainWindow):
         # Strategy & Backtest Panel
         self.backtest_tab = BacktestPanel()
         self.tabs.addTab(self.backtest_tab, "Backtest & Model")
+        
+        # Optimization Panel
+        self.optimization_tab = OptimizationPanel()
+        self.tabs.addTab(self.optimization_tab, "Optuna (Walk-Forward)")
         
         # Results Panel
         self.results_tab = ResultsPanel()

@@ -18,13 +18,17 @@ class ModelManager:
     Por defecto usa Random Forest que es robusto al overfitting.
     """
 
-    def __init__(self, model: Any = None, model_dir: str = "models"):
-        self.model = model or RandomForestClassifier(
-            n_estimators=100,
-            max_depth=5, # Restricción para evitar overfitting
-            random_state=42,
-            class_weight='balanced'
-        )
+    def __init__(self, model: Any = None, model_dir: str = "models", **kwargs):
+        if model is None:
+            rf_kwargs = {
+                'n_estimators': kwargs.get('n_estimators', 100),
+                'max_depth': kwargs.get('max_depth', 5),
+                'random_state': 42,
+                'class_weight': 'balanced'
+            }
+            self.model = RandomForestClassifier(**rf_kwargs)
+        else:
+            self.model = model
         self.model_dir = model_dir
         if not os.path.exists(self.model_dir):
             os.makedirs(self.model_dir)

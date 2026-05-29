@@ -15,6 +15,7 @@ from src.strategy.signal_generator import SignalGenerator
 from src.backtest.portfolio import Portfolio
 from src.backtest.engine import BacktestEngine
 from src.backtest.metrics import calculate_all_metrics
+from src.backtest.optimization import OptunaOptimizer
 
 logger = get_logger(__name__)
 
@@ -34,6 +35,7 @@ class AppController:
         subscribe("data.download.request", self.handle_data_download)
         subscribe("pipeline.run.request", self.handle_pipeline_run)
         subscribe("backtest.run.request", self.handle_backtest_run)
+        subscribe("optimization.run.request", self.handle_optimization_run)
         
     def handle_mt5_connect(self, **kwargs):
         login = kwargs.get("login")
@@ -168,5 +170,27 @@ class AppController:
             except Exception as e:
                 logger.exception("Error en backtest")
                 emit("backtest.error", error=str(e))
+                
+        threading.Thread(target=_run, daemon=True).start()
+
+    def handle_optimization_run(self, **kwargs):
+        if self.current_data is None:
+            emit("optimization.error", error="Debes descargar los datos antes de optimizar.")
+            return
+            
+        n_trials = kwargs.get("n_trials", 20)
+        n_splits = kwargs.get("n_splits", 3)
+        
+        def _run():
+            try:
+                optimizer = OptunaOptimizer(self.current_data, n_trials=n_trials, n_splits=n_splits)
+                best_params = optimizer.optimize()
+                
+                # Después de optimizar, podríamos entrenar un modelo final con los mejores parámetros y guardarlo
+                # Pero por ahora solo pasamos el test de optimización.
+                
+            except Exception as e:
+                logger.exception("Error en optimización")
+                emit("optimization.error", error=str(e))
                 
         threading.Thread(target=_run, daemon=True).start()

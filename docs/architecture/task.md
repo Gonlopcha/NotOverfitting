@@ -67,6 +67,14 @@ Esta es nuestra hoja de ruta viva. Iremos marcando las tareas según avancemos:
 - `[x]` Integrar `main.py` para levantar la app
 - `[x]` Conectar todos los paneles a la capa lógica usando el `EventBus`
 
+## Fase 5 — Optimización + Polish
+- `[x]` Implementar `src/backtest/optimization.py` (Integración con Optuna)
+- `[x]` Implementar `src/backtest/walk_forward.py` (Validación de ventanas deslizantes)
+- `[x]` Crear `src/gui/widgets/optimization_panel.py` (Panel visual de progreso)
+- `[x]` Integrar optimización en `src/core/app_controller.py`
+- `[x]` Añadir pestaña de Optimización a `main_window.py`
+- `[ ]` Guardar/Serializar el modelo optimizado (pipeline + hiperparámetros) en `.joblib`
+
 ## Recomendaciones de Arquitectura (Deuda Técnica)
 *Tareas identificadas para alinear el código con la arquitectura oficial:*
 - `[x]` Crear archivos `__init__.py` en `src/core/` y `src/data/`
