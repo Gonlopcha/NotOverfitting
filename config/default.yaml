@@ -24,3 +24,10 @@ backtest:
   commission_pct: 0.001
   slippage_pips: 1
   position_size: 0.01
+  lot_sizes:
+    EURUSD: 100000.0
+    GBPUSD: 100000.0
+    USDJPY: 100000.0
+    SYMBOL_LIVE: 100000.0
+    SYMBOL_OOS: 100000.0
+    default: 100000.0

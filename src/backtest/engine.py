@@ -56,7 +56,10 @@ class BacktestEngine:
             # 2. Ejecutar la operación (abrir/cerrar)
             # Solo actuamos si hay señal clara (1 o -1). Si es 0, mantenemos posiciones abiertas.
             if current_signal in [1, -1]:
-                size = 1.0
+                from src.core.config_manager import ConfigManager
+                config = ConfigManager()
+                lot_sizes = config.get("backtest.lot_sizes", {})
+                size = lot_sizes.get(symbol, lot_sizes.get("default", 100000.0))
                 
                 # Descontar comision si la operación es una entrada nueva o reversa
                 if symbol not in self.portfolio.positions or current_signal != self.portfolio.positions[symbol].direction:
