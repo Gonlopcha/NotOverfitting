@@ -156,22 +156,22 @@ class DownloadRequest(BaseModel):
         symbol: Símbolo a descargar
         timeframe: Marco temporal (obligatorio para OHLCV, ignorado para ticks)
         data_type: Tipo de datos a descargar (ohlcv o ticks)
-        date_from: Fecha inicio (inclusiva)
-        date_to: Fecha fin (inclusiva)
+        from_dt: Fecha inicio (inclusiva)
+        to_dt: Fecha fin (inclusiva)
         force_refresh: Si True, ignora caché y descarga siempre
     """
     symbol: str = Field(..., min_length=1, max_length=20)
     timeframe: Optional[str] = Field(None, regex=r'^(M1|M5|M15|M30|H1|H4|D1|W1|MN1)$')
     data_type: DataType = DataType.OHLCV
-    date_from: datetime
-    date_to: datetime = Field(default_factory=datetime.now)
+    from_dt: datetime
+    to_dt: datetime = Field(default_factory=datetime.now)
     force_refresh: bool = False
 
-    @validator('date_to')
-    def date_to_after_from(cls, v, values):
-        """Valida que date_to >= date_from."""
-        if 'date_from' in values and v < values['date_from']:
-            raise ValueError('date_to debe ser >= date_from')
+    @validator('to_dt')
+    def to_dt_after_from(cls, v, values):
+        """Valida que to_dt >= from_dt."""
+        if 'from_dt' in values and v < values['from_dt']:
+            raise ValueError('to_dt debe ser >= from_dt')
         return v
     
     @validator('timeframe')

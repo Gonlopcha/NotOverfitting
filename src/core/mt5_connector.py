@@ -299,11 +299,11 @@ class MT5Connector:
             )
             raise DataDownloadError(error_msg)
 
-    def download_ticks(
+    def get_tick_data(
         self,
         symbol: str,
-        start_date: datetime,
-        end_date: datetime = None,
+        from_dt: datetime,
+        to_dt: datetime = None,
         group: str = 'TICK_ALL'
     ) -> pd.DataFrame:
         """
@@ -311,8 +311,8 @@ class MT5Connector:
         
         Args:
             symbol: Símbolo a descargar (ej: 'EURUSD')
-            start_date: Fecha inicio (datetime)
-            end_date: Fecha final (datetime, si None usa la fecha actual)
+            from_dt: Fecha inicio (datetime)
+            to_dt: Fecha final (datetime, si None usa la fecha actual)
             group: Tipo de ticks ('TICK_ALL', 'TICK_BID', 'TICK_ASK')
             
         Returns:
@@ -339,8 +339,8 @@ class MT5Connector:
         if not self.is_connected():
             raise MT5ConnectionError("No hay conexión activa con MT5")
         
-        if end_date is None:
-            end_date = datetime.now()
+        if to_dt is None:
+            to_dt = datetime.now()
         
         # Mapear grupos de ticks
         group_map = {
@@ -366,10 +366,10 @@ class MT5Connector:
                     group=group
                 )
                 
-                logger.info(f"Descargando ticks de {symbol} ({group}) desde {start_date} hasta {end_date}...")
+                logger.info(f"Descargando ticks de {symbol} ({group}) desde {from_dt} hasta {to_dt}...")
                 
                 # Descargar ticks
-                ticks = mt5.copy_ticks_range(symbol, start_date, end_date, mt5_group)
+                ticks = mt5.copy_ticks_range(symbol, from_dt, to_dt, mt5_group)
                 
                 if ticks is None or len(ticks) == 0:
                     error = mt5.last_error()

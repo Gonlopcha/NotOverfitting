@@ -84,8 +84,8 @@ class DataManager:
         self,
         symbol: str,
         timeframe: str,
-        date_from: datetime,
-        date_to: datetime = None,
+        from_dt: datetime,
+        to_dt: datetime = None,
         force_refresh: bool = False
     ) -> pd.DataFrame:
         """
@@ -94,8 +94,8 @@ class DataManager:
         Args:
             symbol: Símbolo (ej: 'EURUSD')
             timeframe: Marco temporal (ej: 'H1')
-            date_from: Fecha inicio
-            date_to: Fecha fin (si None, usa hoy)
+            from_dt: Fecha inicio
+            to_dt: Fecha fin (si None, usa hoy)
             force_refresh: Si True, ignora caché y descarga siempre
 
         Returns:
@@ -104,16 +104,16 @@ class DataManager:
         Raises:
             DataDownloadError: Si falla la descarga o validación
         """
-        if date_to is None:
-            date_to = datetime.now()
+        if to_dt is None:
+            to_dt = datetime.now()
 
         # Validar request
         try:
             request = DownloadRequest(
                 symbol=symbol,
                 timeframe=timeframe,
-                date_from=date_from,
-                date_to=date_to,
+                from_dt=from_dt,
+                to_dt=to_dt,
                 force_refresh=force_refresh
             )
         except Exception as e:
@@ -122,7 +122,7 @@ class DataManager:
 
         logger.info(
             f"Descargando {symbol} {timeframe} "
-            f"({date_from.date()} → {date_to.date()})"
+            f"({from_dt.date()} → {to_dt.date()})"
         )
 
         emit(
@@ -130,14 +130,14 @@ class DataManager:
             source='DataManager',
             symbol=symbol,
             timeframe=timeframe,
-            date_from=date_from,
-            date_to=date_to
+            from_dt=from_dt,
+            to_dt=to_dt
         )
 
         try:
             # Paso 1: Verificar caché si no force_refresh
             if not force_refresh:
-                cached_df = self.cache.get_data(symbol, timeframe, date_from, date_to)
+                cached_df = self.cache.get_data(symbol, timeframe, from_dt, to_dt)
                 if cached_df is not None:
                     logger.info(f"✓ Hit en caché: {symbol}/{timeframe}")
                     emit(
@@ -151,11 +151,11 @@ class DataManager:
                     return cached_df
 
             # Paso 2: Obtener rangos faltantes
-            missing_ranges = self.cache.get_missing_ranges(symbol, timeframe, date_from, date_to)
+            missing_ranges = self.cache.get_missing_ranges(symbol, timeframe, from_dt, to_dt)
 
             if not missing_ranges:
                 # Datos completos en caché (pero pasamos fuerza_refresh)
-                cached_df = self.cache.get_data(symbol, timeframe, date_from, date_to)
+                cached_df = self.cache.get_data(symbol, timeframe, from_dt, to_dt)
                 return cached_df
 
             # Paso 3: Descargar datos faltantes
@@ -220,10 +220,10 @@ class DataManager:
                 # No fallar si el almacenamiento tiene problemas
 
             # Paso 7: Actualizar caché
-            self.cache.update(symbol, timeframe, df, date_from, date_to)
+            self.cache.update(symbol, timeframe, df, from_dt, to_dt)
 
             # Paso 8: Retornar datos filtrados por rango solicitado
-            mask = (df['time'] >= date_from) & (df['time'] <= date_to)
+            mask = (df['time'] >= from_dt) & (df['time'] <= to_dt)
             result_df = df[mask].reset_index(drop=True)
 
             emit(
@@ -251,11 +251,11 @@ class DataManager:
             )
             raise DataDownloadError(f"Error descargando {symbol} {timeframe}: {e}")
 
-    def download_ticks(
+    def get_tick_data(
         self,
         symbol: str,
-        date_from: datetime,
-        date_to: datetime = None,
+        from_dt: datetime,
+        to_dt: datetime = None,
         force_refresh: bool = False,
         group: str = 'TICK_ALL'
     ) -> pd.DataFrame:
@@ -264,8 +264,8 @@ class DataManager:
 
         Args:
             symbol: Símbolo (ej: 'EURUSD')
-            date_from: Fecha inicio
-            date_to: Fecha fin (si None, usa hoy)
+            from_dt: Fecha inicio
+            to_dt: Fecha fin (si None, usa hoy)
             force_refresh: Si True, ignora caché y descarga siempre
             group: Tipo de ticks ('TICK_ALL', 'TICK_BID', 'TICK_ASK')
 
@@ -275,8 +275,8 @@ class DataManager:
         Raises:
             DataDownloadError: Si falla la descarga o validación
         """
-        if date_to is None:
-            date_to = datetime.now()
+        if to_dt is None:
+            to_dt = datetime.now()
 
         # Validar request
         try:
@@ -284,8 +284,8 @@ class DataManager:
                 symbol=symbol,
                 timeframe=None,
                 data_type=DataType.TICKS,
-                date_from=date_from,
-                date_to=date_to,
+                from_dt=from_dt,
+                to_dt=to_dt,
                 force_refresh=force_refresh
             )
         except Exception as e:
@@ -294,7 +294,7 @@ class DataManager:
 
         logger.info(
             f"Descargando ticks {symbol} {group} "
-            f"({date_from.date()} → {date_to.date()})"
+            f"({from_dt.date()} → {to_dt.date()})"
         )
 
         emit(
@@ -302,14 +302,14 @@ class DataManager:
             source='DataManager',
             symbol=symbol,
             group=group,
-            date_from=date_from,
-            date_to=date_to
+            from_dt=from_dt,
+            to_dt=to_dt
         )
 
         try:
             # Paso 1: Verificar caché si no force_refresh
             if not force_refresh:
-                cached_df = self.cache.get_data(symbol, 'TICKS', date_from, date_to)
+                cached_df = self.cache.get_data(symbol, 'TICKS', from_dt, to_dt)
                 if cached_df is not None:
                     logger.info(f"✓ Hit en caché: {symbol}/TICKS")
                     emit(
@@ -323,11 +323,11 @@ class DataManager:
                     return cached_df
 
             # Paso 2: Obtener rangos faltantes
-            missing_ranges = self.cache.get_missing_ranges(symbol, 'TICKS', date_from, date_to)
+            missing_ranges = self.cache.get_missing_ranges(symbol, 'TICKS', from_dt, to_dt)
 
             if not missing_ranges:
                 # Datos completos en caché
-                cached_df = self.cache.get_data(symbol, 'TICKS', date_from, date_to)
+                cached_df = self.cache.get_data(symbol, 'TICKS', from_dt, to_dt)
                 return cached_df
 
             # Paso 3: Descargar datos faltantes
@@ -353,7 +353,7 @@ class DataManager:
 
                 # Descargar de MT5
                 try:
-                    df = self.mt5.download_ticks(symbol, miss_from, miss_to, group)
+                    df = self.mt5.get_tick_data(symbol, miss_from, miss_to, group)
                     all_data.append(df)
                 except Exception as e:
                     logger.warning(f"Error descargando ticks {symbol} ({group}): {e}")
@@ -392,10 +392,10 @@ class DataManager:
                 # No fallar si el almacenamiento tiene problemas
 
             # Paso 7: Actualizar caché
-            self.cache.update(symbol, 'TICKS', df, date_from, date_to)
+            self.cache.update(symbol, 'TICKS', df, from_dt, to_dt)
 
             # Paso 8: Retornar datos filtrados por rango solicitado
-            mask = (df['time'] >= date_from) & (df['time'] <= date_to)
+            mask = (df['time'] >= from_dt) & (df['time'] <= to_dt)
             result_df = df[mask].reset_index(drop=True)
 
             emit(
@@ -432,7 +432,7 @@ class DataManager:
         Descarga múltiples símbolos/timeframes en lote.
 
         Args:
-            requests: Lista de dicts con keys: symbol, timeframe, date_from, date_to
+            requests: Lista de dicts con keys: symbol, timeframe, from_dt, to_dt
             parallel: Si True, descarga en paralelo (con thread pool)
 
         Returns:
@@ -449,8 +449,8 @@ class DataManager:
                         self.download,
                         req['symbol'],
                         req['timeframe'],
-                        req['date_from'],
-                        req.get('date_to'),
+                        req['from_dt'],
+                        req.get('to_dt'),
                         req.get('force_refresh', False)
                     )
                     futures[future] = (req['symbol'], req['timeframe'])
@@ -468,8 +468,8 @@ class DataManager:
                     df = self.download(
                         req['symbol'],
                         req['timeframe'],
-                        req['date_from'],
-                        req.get('date_to'),
+                        req['from_dt'],
+                        req.get('to_dt'),
                         req.get('force_refresh', False)
                     )
                     results[(req['symbol'], req['timeframe'])] = df
