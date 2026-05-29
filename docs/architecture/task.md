@@ -46,6 +46,17 @@ Esta es nuestra hoja de ruta viva. Iremos marcando las tareas según avancemos:
 
 ---
 
+## Fase 3 — Estrategia + Backtest (Núcleo Anti-Overfitting)
+- `[x]` Implementar `src/strategy/base.py` (Clase base `StrategyBase`)
+- `[x]` Implementar `src/strategy/model_manager.py` (Manejo de modelos ML y cálculo MDA)
+- `[x]` Implementar `src/strategy/signal_generator.py` (Traducción de predicción a señal)
+- `[x]` Implementar `src/backtest/engine.py` (Motor event-driven)
+- `[x]` Implementar `src/backtest/portfolio.py` (Gestión de capital y riesgo)
+- `[x]` Implementar `src/backtest/metrics.py` (Métricas robustas, Sharpe, MaxDD)
+- `[x]` Pruebas unitarias de la fase de modelado y backtesting
+
+---
+
 ## Recomendaciones de Arquitectura (Deuda Técnica)
 *Tareas identificadas para alinear el código con la arquitectura oficial:*
 - `[x]` Crear archivos `__init__.py` en `src/core/` y `src/data/`
