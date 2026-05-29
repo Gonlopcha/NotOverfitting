@@ -262,6 +262,15 @@ La prevención definitiva del sobreajuste (Overfitting). Consiste en dos compone
    Si el modelo se quiebra en alguna ventana, significa que el sistema estaba sobreajustado a las condiciones de mercado de 2021, y por tanto, es rechazado y no pasará a Live Trading.
 3. **GUI Integration (`optimization_panel.py`)**: Un panel visual donde el usuario lanza la optimización en hilos separados (vía `AppController`) y ve cómo las métricas (Sharpe, PnL) convergen hacia su estado óptimo en tiempo real.
 
+### 3.6 Data Science (Fase 5.5)
+Para lograr que la IA sea predictivamente rentable, se incorporan prácticas de ML Financiero Avanzado:
+
+1. **Features Técnicos Ampliados (`src/pipeline/features/advanced_technical.py`)**:
+   - Implementación de al menos 15+ features nuevos (RSI, MACD, Bandas de Bollinger, ADX, ATR, Microestructura de velas) usando `talib` o cálculos matriciales de `pandas`.
+2. **Triple Barrier Method (`src/pipeline/features/triple_barrier.py`)**:
+   - Etiquetado de datos avanzado. En lugar de predecir la siguiente vela (`close > close.shift(-1)`), la IA predecirá si el precio tocará una barrera superior (Take Profit) o inferior (Stop Loss) dentro de un horizonte temporal máximo (Time Barrier).
+   - Variables dinámicas de TP/SL adaptadas a la volatilidad histórica (`ATR`).
+
 ## 4. Workflows y Patrones de Datos
 | `get_symbols()`                        | Lista símbolos disponibles en el broker      |
 | `get_tick_data(symbol, from, to)`      | Descarga datos tick-by-tick                   |

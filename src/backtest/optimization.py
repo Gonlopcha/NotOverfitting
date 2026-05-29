@@ -79,7 +79,7 @@ class OptunaOptimizer:
                 signals.index = test_data.index
                 
                 # Backtest (usamos los precios raw de test_data)
-                portfolio = Portfolio(initial_capital=10000, max_drawdown=0.20, kelly_fraction=0.5)
+                portfolio = Portfolio(initial_capital=10000, max_drawdown_limit=0.20, kelly_fraction=0.5)
                 engine = BacktestEngine(portfolio)
                 engine.run(test_data, signals, symbol="SYMBOL_OPT")
                 
