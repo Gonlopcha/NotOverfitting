@@ -240,14 +240,29 @@ Registry
 
 ### 3.4 MT5Connector (Thread-Safe)
 
-Ubicado en `core/` como un Singleton con control de concurrencia (`threading.Lock()`). Dado que la librería `MetaTrader5` maneja un estado global en el intérprete de Python, este componente centraliza **todas** las llamadas a la API de MetaTrader (ya sea descarga de históricos desde `data` o envío de órdenes desde `live`). Esto evita desconexiones, bloqueos o colisiones cuando el bot opere en tiempo real.
-
+Ubicado en `core/` como un Singleton con control de concurrencia (`threading.Lock()`). Dado que la librería `MetaTrader5` maneja un estado global en el intérprete de Python, este componente centraliza **todas** las llamadas a la API de MetaTrader.
 
 | Método                                | Descripción                                  |
 | -------------------------------------- | --------------------------------------------- |
 | `connect(login, password, server)`     | Inicializa conexión MT5 con lock             |
 | `disconnect()`                         | Cierra conexión limpiamente                  |
 | `download_ohlcv(symbol, tf, from, to)` | Descarga datos OHLCV de forma segura con lock |
+| `get_symbols()`                        | Lista símbolos disponibles en el broker      |
+| `get_tick_data(symbol, from, to)`      | Descarga datos tick-by-tick                   |
+| `send_order(request)`                  | Envía orden al mercado (encolada vía lock)  |
+| `get_positions()`                      | Obtiene posiciones abiertas de forma segura   |
+
+### 3.5 Optimización y Walk-Forward (Fase 5)
+La prevención definitiva del sobreajuste (Overfitting). Consiste en dos componentes:
+
+1. **Optimizador Matemático (`Optuna`)**: En lugar de probar parámetros a lo loco, `src/backtest/optimization.py` utiliza optimización bayesiana para buscar los mejores hiper-parámetros del modelo (ej: profundidad del bosque, límite de outliers).
+2. **Walk-Forward Validation (`src/backtest/walk_forward.py`)**: Valida la estrategia en "ventanas de tiempo deslizantes". 
+   - *Ventana 1:* Entrena 2021-2022, prueba en Enero 2023.
+   - *Ventana 2:* Entrena 2022-2023, prueba en Julio 2023.
+   Si el modelo se quiebra en alguna ventana, significa que el sistema estaba sobreajustado a las condiciones de mercado de 2021, y por tanto, es rechazado y no pasará a Live Trading.
+3. **GUI Integration (`optimization_panel.py`)**: Un panel visual donde el usuario lanza la optimización en hilos separados (vía `AppController`) y ve cómo las métricas (Sharpe, PnL) convergen hacia su estado óptimo en tiempo real.
+
+## 4. Workflows y Patrones de Datos
 | `get_symbols()`                        | Lista símbolos disponibles en el broker      |
 | `get_tick_data(symbol, from, to)`      | Descarga datos tick-by-tick                   |
 | `send_order(request)`                  | Envía orden al mercado (encolada vía lock)  |
