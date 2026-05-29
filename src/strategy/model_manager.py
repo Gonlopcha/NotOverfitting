@@ -43,9 +43,24 @@ class ModelManager:
         """Realiza predicciones."""
         return self.model.predict(X)
 
-    def predict_proba(self, X: pd.DataFrame) -> np.ndarray:
-        """Devuelve las probabilidades predichas."""
-        return self.model.predict_proba(X)
+    def predict_proba(self, X: pd.DataFrame) -> pd.DataFrame:
+        """
+        Devuelve las probabilidades predichas como un DataFrame alineado con las clases (-1, 0, 1).
+        Asegura que siempre existan las columnas para todas las clases esperadas, 
+        incluso si la muestra de entrenamiento no tenía alguna clase.
+        """
+        probs = self.model.predict_proba(X)
+        classes = self.model.classes_
+        
+        df_probs = pd.DataFrame(probs, columns=classes, index=X.index)
+        
+        # Asegurar que existan las 3 clases de Triple Barrera
+        for expected_class in [-1, 0, 1]:
+            if expected_class not in df_probs.columns:
+                df_probs[expected_class] = 0.0
+                
+        # Reordenar las columnas consistentemente
+        return df_probs[[-1, 0, 1]]
 
     def calculate_mda(self, X_val: pd.DataFrame, y_val: pd.Series, n_repeats: int = 5) -> pd.DataFrame:
         """

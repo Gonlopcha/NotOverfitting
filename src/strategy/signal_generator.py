@@ -23,32 +23,25 @@ class SignalGenerator:
         self.sell_threshold = sell_threshold
         self.enable_short = enable_short
         
-    def generate(self, probabilities: np.ndarray) -> pd.Series:
+    def generate(self, probabilities: Any) -> pd.Series:
         """
         Genera señales a partir de probabilidades.
         
         Args:
-            probabilities: Array de probabilidades predichas. 
-                           Si es 2D (ej: output de predict_proba), usamos la col 1.
-            
-        Returns:
-            pd.Series con señales (1, -1, 0).
+            probabilities: Array o DataFrame de probabilidades predichas. 
         """
-        if len(probabilities.shape) == 2:
-            if probabilities.shape[1] == 3:
-                # Caso Multiclase (-1, 0, 1)
-                prob_short = probabilities[:, 0]
-                prob_long = probabilities[:, 2]
-                
-                signals = np.zeros(len(probabilities), dtype=int)
-                signals[prob_long >= self.buy_threshold] = 1
-                if self.enable_short:
-                    # En multiclase usamos un umbral directo para el corto, no el sell_threshold binario
-                    signals[prob_short >= self.buy_threshold] = -1
-                return pd.Series(signals, name='signal')
-            else:
-                # Caso Binario (0, 1)
-                prob_pos = probabilities[:, 1]
+        if isinstance(probabilities, pd.DataFrame):
+            prob_short = probabilities[-1].values
+            prob_long = probabilities[1].values
+            
+            signals = np.zeros(len(probabilities), dtype=int)
+            signals[prob_long >= self.buy_threshold] = 1
+            if self.enable_short:
+                signals[prob_short >= self.buy_threshold] = -1
+            return pd.Series(signals, name='signal', index=probabilities.index)
+            
+        elif len(probabilities.shape) == 2:
+            prob_pos = probabilities[:, 1]
         else:
             prob_pos = probabilities
             

@@ -14,7 +14,7 @@ class BacktestEngine:
     totalmente el look-ahead bias y asegurar un backtest realista.
     """
     
-    def __init__(self, portfolio: Portfolio, commission_pct: float = 0.001, slippage_pips: float = 1.0):
+    def __init__(self, portfolio: Portfolio, commission_pct: float = 0.00007, slippage_pips: float = 0.5):
         self.portfolio = portfolio
         self.commission_pct = commission_pct
         self.slippage_pips = slippage_pips 
@@ -54,8 +54,8 @@ class BacktestEngine:
                 price = price * (1 - (self.slippage_pips / 10000.0))  # Disminuye precio de venta
             
             # 2. Ejecutar la operación (abrir/cerrar)
-            if current_signal != 0:
-                # El tamaño ideal sería por Kelly. Por simplicidad usamos 1.0 "unidad" base.
+            # Solo actuamos si hay señal clara (1 o -1). Si es 0, mantenemos posiciones abiertas.
+            if current_signal in [1, -1]:
                 size = 1.0
                 
                 # Descontar comision si la operación es una entrada nueva o reversa
@@ -64,10 +64,6 @@ class BacktestEngine:
                      self.portfolio.current_capital -= comision
                      
                 self.portfolio.execute_trade(symbol, current_signal, price, current_time, size)
-            else:
-                # Si la señal es 0, forzamos cierre de cualquier posición abierta
-                if symbol in self.portfolio.positions:
-                     self.portfolio.execute_trade(symbol, current_signal, price, current_time, 0.0)
                      
             # 3. Actualizar la curva de capital al cierre actual (mark-to-market temporal)
             mtm_capital = self.portfolio.current_capital
