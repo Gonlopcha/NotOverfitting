@@ -37,3 +37,12 @@ Esta es nuestra hoja de ruta viva. Iremos marcando las tareas según avancemos:
 
 ## Fase 2 — Pipeline (Próximamente)
 - `[ ]` (Las tareas de esta fase se añadirán al terminar la Fase 1)
+
+---
+
+## Recomendaciones de Arquitectura (Deuda Técnica)
+*Tareas identificadas para alinear el código con la arquitectura oficial:*
+- `[x]` Crear archivos `__init__.py` en `src/core/` y `src/data/`
+- `[x]` Refactorizar `logger.py` a una clase Singleton capaz de emitir eventos `log.message` al `EventBus`
+- `[x]` Completar `mt5_connector.py` (añadir `get_symbols`, `send_order`, `get_positions`)
+- `[x]` Actualizar `config_manager.py` (merge de YAML, setters, tipado y thread-safety)

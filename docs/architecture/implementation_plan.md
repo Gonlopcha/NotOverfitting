@@ -10,7 +10,7 @@
 
 ```mermaid
 graph TB
-    subgraph GUI["🖥️ Capa GUI (PyQt5 / PySide6)"]
+    subgraph GUI["🖥️ Capa GUI (PySide6)"]
         MW["MainWindow"]
         DP["Panel: Datos"]
         PP["Panel: Pipeline"]
@@ -700,7 +700,7 @@ numpy==1.21.6
 PyYAML==6.0
 
 # GUI
-PyQt5==5.15.9
+PySide6==6.7.0
 
 # Pipeline / ML
 scikit-learn==1.0.2
@@ -714,7 +714,7 @@ optuna==3.1.0
 # Visualización
 matplotlib==3.5.3
 mplfinance==0.12.9b7
-pyqtgraph==0.13.3
+pyqtgraph==0.14.4
 
 # Almacenamiento
 pyarrow==8.0.0     # Para Parquet
@@ -812,7 +812,7 @@ graph TB
 ## User Review Required
 
 > [!IMPORTANT]
-> **Framework GUI**: Se propone **PyQt5** por madurez y ecosistema de widgets. Alternativas: PySide6 (licencia LGPL), Tkinter (más simple pero menos potente), DearPyGui (GPU-accelerated). ¿Alguna preferencia?
+> **Framework GUI**: **✅ PySide6 oficializado** por preferencia del usuario (Licencia LGPL, modernidad con Qt6).
 
 > [!IMPORTANT]
 > **Motor de Backtest**: Se diseñó un motor **event-driven propio**. Alternativa: usar `Backtrader` o `vectorbt` como base y extenderlos. El motor propio da control total pero requiere más desarrollo. ¿Preferencia?

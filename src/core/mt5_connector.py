@@ -504,6 +504,125 @@ class MT5Connector:
             logger.error(f"Error obteniendo información de la cuenta: {e}")
             raise
 
+    def get_symbols(self, group: str = "*") -> List[str]:
+        """
+        Obtiene la lista de símbolos disponibles en el broker.
+        
+        Args:
+            group: Filtro de grupo (ej: "*USD*", "*")
+            
+        Returns:
+            Lista de nombres de símbolos
+        """
+        if not self.is_connected():
+            raise MT5ConnectionError("No hay conexión activa con MT5")
+            
+        try:
+            with self._connection_lock:
+                symbols = mt5.symbols_get(group)
+                if symbols is None:
+                    raise DataDownloadError(f"No se pudieron obtener símbolos con el filtro '{group}'")
+                return [s.name for s in symbols]
+        except Exception as e:
+            logger.error(f"Error obteniendo símbolos: {e}")
+            raise
+
+    def get_positions(self, symbol: str = None) -> List[Dict[str, Any]]:
+        """
+        Obtiene las posiciones abiertas actuales.
+        
+        Args:
+            symbol: Si se especifica, filtra por símbolo
+            
+        Returns:
+            Lista de diccionarios con información de cada posición
+        """
+        if not self.is_connected():
+            raise MT5ConnectionError("No hay conexión activa con MT5")
+            
+        try:
+            with self._connection_lock:
+                if symbol:
+                    positions = mt5.positions_get(symbol=symbol)
+                else:
+                    positions = mt5.positions_get()
+                    
+                if positions is None:
+                    error = mt5.last_error()
+                    logger.error(f"Error al obtener posiciones: {error}")
+                    return []
+                    
+                result = []
+                for pos in positions:
+                    result.append({
+                        'ticket': pos.ticket,
+                        'time': datetime.fromtimestamp(pos.time),
+                        'type': pos.type,
+                        'magic': pos.magic,
+                        'identifier': pos.identifier,
+                        'reason': pos.reason,
+                        'volume': pos.volume,
+                        'price_open': pos.price_open,
+                        'sl': pos.sl,
+                        'tp': pos.tp,
+                        'price_current': pos.price_current,
+                        'swap': pos.swap,
+                        'profit': pos.profit,
+                        'symbol': pos.symbol,
+                        'comment': pos.comment
+                    })
+                return result
+        except Exception as e:
+            logger.error(f"Error obteniendo posiciones: {e}")
+            raise
+
+    def send_order(self, request: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Envía una orden al mercado de forma segura.
+        
+        Args:
+            request: Diccionario con la estructura de la orden para MT5
+            
+        Returns:
+            Diccionario con el resultado de la orden
+        """
+        if not self.is_connected():
+            raise MT5ConnectionError("No hay conexión activa con MT5")
+            
+        try:
+            with self._connection_lock:
+                logger.info(f"Enviando orden: {request.get('action', 'unknown')} {request.get('symbol', 'unknown')} {request.get('volume', 0)}")
+                result = mt5.order_send(request)
+                
+                if result is None:
+                    error = mt5.last_error()
+                    error_msg = f"order_send falló por completo. Error MT5: {error}"
+                    logger.error(error_msg)
+                    raise MT5ConnectionError(error_msg)
+                    
+                res_dict = {
+                    'retcode': result.retcode,
+                    'deal': result.deal,
+                    'order': result.order,
+                    'volume': result.volume,
+                    'price': result.price,
+                    'bid': result.bid,
+                    'ask': result.ask,
+                    'comment': result.comment,
+                    'request_id': result.request_id,
+                    'retcode_external': result.retcode_external
+                }
+                
+                if result.retcode != mt5.TRADE_RETCODE_DONE:
+                    logger.warning(f"Orden fallida/rechazada: retcode={result.retcode}, comment={result.comment}")
+                else:
+                    logger.info(f"Orden ejecutada exitosamente: ticket={result.order}, precio={result.price}")
+                    
+                return res_dict
+        except Exception as e:
+            logger.error(f"Error enviando orden: {e}")
+            raise
+
     def __enter__(self):
         """Context manager support."""
         return self
