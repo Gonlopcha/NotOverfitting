@@ -11,12 +11,15 @@ logger = get_logger(__name__)
 
 class Position:
     """Representa una posición abierta en el mercado."""
-    def __init__(self, symbol: str, direction: int, entry_price: float, size: float, entry_time: pd.Timestamp):
+    def __init__(self, symbol: str, direction: int, entry_price: float, size: float, entry_time: pd.Timestamp, tp_price: float = None, sl_price: float = None):
         self.symbol = symbol
         self.direction = direction  # 1: Long, -1: Short
         self.entry_price = entry_price
         self.size = size
         self.entry_time = entry_time
+        self.tp_price = tp_price
+        self.sl_price = sl_price
+        self.bars_held = 0
         
     def get_unrealized_pnl(self, current_price: float) -> float:
         """Calcula el PnL no realizado de la posición (sin apalancamiento/pip value por simplicidad)."""
@@ -77,16 +80,16 @@ class Portfolio:
         # Cap máximo de riesgo por operación (ej. 5% de la cuenta)
         return min(safe_kelly, 0.05)
 
-    def execute_trade(self, symbol: str, signal: int, price: float, time: pd.Timestamp, size: float):
+    def execute_trade(self, symbol: str, signal: int, price: float, time: pd.Timestamp, size: float, tp_price: float = None, sl_price: float = None):
         """Abre o cierra una posición según la señal."""
         if self.is_risk_limit_exceeded():
             logger.warning("No se permiten más operaciones, se excedió el límite de drawdown.")
             return
 
-        # Señal de salida si hay posición abierta contraria
+        # Señal de salida si hay posición abierta contraria (o señal explícita de cierre 0)
         if symbol in self.positions:
             pos = self.positions[symbol]
-            if signal == 0 or signal != pos.direction:
+            if signal == 0 or (signal in [1, -1] and signal != pos.direction):
                 # Cerrar posición actual
                 pnl = pos.get_unrealized_pnl(price)
                 self.current_capital += pnl
@@ -100,15 +103,16 @@ class Portfolio:
                     'entry_price': pos.entry_price,
                     'exit_price': price,
                     'pnl': pnl,
-                    'size': pos.size
+                    'size': pos.size,
+                    'bars_held': pos.bars_held
                 })
                 logger.info(f"Cerrada posición {symbol} PnL: {pnl:.2f} Capital: {self.current_capital:.2f}")
                 del self.positions[symbol]
 
         # Abrir nueva posición si hay señal
         if signal in [1, -1] and symbol not in self.positions:
-            self.positions[symbol] = Position(symbol, signal, price, size, time)
-            logger.info(f"Abierta posición {symbol} Dir: {signal} Tamaño: {size} Precio: {price:.5f}")
+            self.positions[symbol] = Position(symbol, signal, price, size, time, tp_price, sl_price)
+            logger.info(f"Abierta posición {symbol} Dir: {signal} Tamaño: {size} Precio: {price:.5f} TP: {tp_price} SL: {sl_price}")
 
     def update_equity_curve(self):
         """Registra el capital actual en la curva de equity."""

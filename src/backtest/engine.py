@@ -30,6 +30,9 @@ class BacktestEngine:
         """
         logger.info(f"Iniciando backtest para {symbol} ({len(data)} barras)...")
         
+        # Horizonte temporal de la triple barrera
+        horizon = 24
+        
         # Iterar barra por barra simulando eventos
         for i in range(len(data)):
             current_bar = data.iloc[i]
@@ -42,31 +45,78 @@ class BacktestEngine:
                 current_time = current_bar['time']
             else:
                 current_time = pd.Timestamp.now()
-            
-            # 1. Actualizar el portfolio a los precios de mercado actuales (mark-to-market)
-            # Para simplificar, asumimos que podemos operar al precio de cierre de la barra
+                
             price = current_bar['close']
+            high = current_bar['high'] if 'high' in current_bar else price
+            low = current_bar['low'] if 'low' in current_bar else price
             
-            # Aplicar "slippage"
-            if current_signal == 1:
-                price = price * (1 + (self.slippage_pips / 10000.0))  # Aumenta precio de compra
-            elif current_signal == -1:
-                price = price * (1 - (self.slippage_pips / 10000.0))  # Disminuye precio de venta
-            
-            # 2. Ejecutar la operación (abrir/cerrar)
-            # Solo actuamos si hay señal clara (1 o -1). Si es 0, mantenemos posiciones abiertas.
-            if current_signal in [1, -1]:
+            # Revisar si las posiciones existentes tocan TP/SL o alcanzan el horizonte
+            if symbol in self.portfolio.positions:
+                pos = self.portfolio.positions[symbol]
+                pos.bars_held += 1
+                
+                close_signal = False
+                exit_price = price
+                
+                if pos.direction == 1:
+                    if pos.tp_price and high >= pos.tp_price:
+                        close_signal = True
+                        exit_price = pos.tp_price
+                    elif pos.sl_price and low <= pos.sl_price:
+                        close_signal = True
+                        exit_price = pos.sl_price
+                elif pos.direction == -1:
+                    # Para cortos, TP es abajo y SL es arriba
+                    if pos.tp_price and low <= pos.tp_price:
+                        close_signal = True
+                        exit_price = pos.tp_price
+                    elif pos.sl_price and high >= pos.sl_price:
+                        close_signal = True
+                        exit_price = pos.sl_price
+                        
+                # Condición de Tiempo (Horizonte)
+                if not close_signal and pos.bars_held >= horizon:
+                    close_signal = True
+                    exit_price = price # Cierra al cierre actual
+                    
+                # Si otra señal contraria viene del modelo, también cerramos
+                if not close_signal and current_signal in [1, -1] and current_signal != pos.direction:
+                    close_signal = True
+                    exit_price = price
+                    
+                if close_signal:
+                    # Forzar el cierre enviando señal 0 a la ejecución, pero al precio de salida simulado
+                    self.portfolio.execute_trade(symbol, 0, exit_price, current_time, pos.size)
+
+            # Si después de las comprobaciones no hay posición, y hay señal nueva, abrir
+            if symbol not in self.portfolio.positions and current_signal in [1, -1]:
                 from src.core.config_manager import ConfigManager
                 config = ConfigManager()
                 lot_sizes = config.get("backtest.lot_sizes", {})
                 size = lot_sizes.get(symbol, lot_sizes.get("default", 100000.0))
                 
-                # Descontar comision si la operación es una entrada nueva o reversa
-                if symbol not in self.portfolio.positions or current_signal != self.portfolio.positions[symbol].direction:
-                     comision = price * size * self.commission_pct
-                     self.portfolio.current_capital -= comision
-                     
-                self.portfolio.execute_trade(symbol, current_signal, price, current_time, size)
+                # Calcular TP y SL usando un ATR aproximado
+                # Usamos la volatilidad de los últimos 14 periodos
+                if i >= 14:
+                    atr = data['close'].iloc[i-14:i+1].std()
+                else:
+                    atr = price * 0.005 # Fallback (0.5% del precio)
+                    
+                if atr < 1e-5: atr = price * 0.005
+                
+                if current_signal == 1:
+                    entry_price = price * (1 + (self.slippage_pips / 10000.0))
+                    tp_price = entry_price + (atr * 2.0)
+                    sl_price = entry_price - (atr * 1.0)
+                else:
+                    entry_price = price * (1 - (self.slippage_pips / 10000.0))
+                    tp_price = entry_price - (atr * 2.0)
+                    sl_price = entry_price + (atr * 1.0)
+                
+                comision = entry_price * size * self.commission_pct
+                self.portfolio.current_capital -= comision
+                
+                self.portfolio.execute_trade(symbol, current_signal, entry_price, current_time, size, tp_price=tp_price, sl_price=sl_price)
                      
             # 3. Actualizar la curva de capital al cierre actual (mark-to-market temporal)
             mtm_capital = self.portfolio.current_capital

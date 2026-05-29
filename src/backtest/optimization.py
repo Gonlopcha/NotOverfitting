@@ -98,7 +98,13 @@ class OptunaOptimizer:
                 # OJO: X_test_proc tiene el mismo índice que test_data[valid_test]
                 backtest_data = test_data.loc[X_test_proc.index]
                 
-                portfolio = Portfolio(initial_capital=10000, max_drawdown_limit=0.20, kelly_fraction=0.5)
+                from src.core.config_manager import ConfigManager
+                config = ConfigManager()
+                init_cap = config.get("backtest.initial_capital", 10000.0)
+                # Fetch drawdown limit from config, defaulting to 0.20
+                dd_limit = config.get("backtest.max_drawdown", 0.50) # Increased default to avoid early kills during opt
+                
+                portfolio = Portfolio(initial_capital=init_cap, max_drawdown_limit=dd_limit, kelly_fraction=0.5)
                 engine = BacktestEngine(portfolio)
                 engine.run(backtest_data, signals, symbol="SYMBOL_OPT")
                 
