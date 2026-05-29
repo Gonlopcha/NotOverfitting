@@ -59,6 +59,13 @@ class AppController:
         d_from = kwargs.get("date_from")
         d_to = kwargs.get("date_to")
         
+        # Convertir a datetime si son objetos date
+        import datetime
+        if isinstance(d_from, datetime.date) and not isinstance(d_from, datetime.datetime):
+            d_from = datetime.datetime.combine(d_from, datetime.time.min)
+        if isinstance(d_to, datetime.date) and not isinstance(d_to, datetime.datetime):
+            d_to = datetime.datetime.combine(d_to, datetime.time.max)
+            
         def _download():
             try:
                 self.current_data = self.data_manager.download(symbol, tf, d_from, d_to)
