@@ -187,8 +187,44 @@ class AppController:
                 optimizer = OptunaOptimizer(self.current_data, n_trials=n_trials, n_splits=n_splits)
                 best_params = optimizer.optimize()
                 
-                # Después de optimizar, podríamos entrenar un modelo final con los mejores parámetros y guardarlo
-                # Pero por ahora solo pasamos el test de optimización.
+                # Entrenar modelo final con los mejores parámetros
+                logger.info("Entrenando modelo final con todos los datos...")
+                pipeline = PipelineOrchestrator.create_default(
+                    features=['atr_14', 'rsi_14', 'bollinger_bands', 'ema_distances', 'log_returns', 'rolling_volatility_20', 'momentum_ma_ratio_50', 'relative_volume_20'],
+                    use_pca=True, 
+                    pca_variance=best_params['pca_variance']
+                )
+                
+                df_proc = pipeline.fit_transform(self.current_data.copy())
+                target = apply_triple_barrier(df_proc, pt_factor=2.0, sl_factor=1.0, horizon=24, atr_col='atr_14')
+                
+                valid = target.notna()
+                df_proc = df_proc[valid]
+                target = pd.Series(target[valid])
+                
+                drop_cols = ['open', 'high', 'low', 'close', 'tick_volume', 'spread', 'real_volume', 'time']
+                feature_cols = [c for c in df_proc.columns if c not in drop_cols]
+                
+                model_manager = ModelManager(n_estimators=best_params['rf_n_estimators'], max_depth=best_params['rf_max_depth'])
+                model_manager.train(df_proc[feature_cols], target)
+                
+                # Serializar el modelo completo (Pipeline + ModelManager + Hiperparámetros de señal)
+                import joblib
+                import os
+                if not os.path.exists("models"):
+                    os.makedirs("models")
+                
+                final_model_path = os.path.join("models", "optimized_production_model.joblib")
+                joblib.dump({
+                    "pipeline": pipeline,
+                    "model_manager": model_manager,
+                    "buy_threshold": best_params['buy_threshold'],
+                    "sell_threshold": best_params['sell_threshold'],
+                    "features": feature_cols
+                }, final_model_path)
+                
+                logger.info(f"✅ Modelo de producción guardado exitosamente en: {final_model_path}")
+                emit("log.message", message=f"Modelo guardado en {final_model_path}")
                 
             except Exception as e:
                 logger.exception("Error en optimización")

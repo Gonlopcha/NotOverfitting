@@ -73,7 +73,7 @@ Esta es nuestra hoja de ruta viva. Iremos marcando las tareas según avancemos:
 - `[x]` Crear `src/gui/widgets/optimization_panel.py` (Panel visual de progreso)
 - `[x]` Integrar optimización en `src/core/app_controller.py`
 - `[x]` Añadir pestaña de Optimización a `main_window.py`
-- `[ ]` Guardar/Serializar el modelo optimizado (pipeline + hiperparámetros) en `.joblib`
+- `[x]` Guardar/Serializar el modelo optimizado (pipeline + hiperparámetros) en `.joblib`
 
 ## Fase 5.5 — Data Science & Advanced ML
 - `[x]` Implementar `src/pipeline/features/advanced_technical.py` (Nuevos features: ATR, RSI, MACD, etc)
