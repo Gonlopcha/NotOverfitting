@@ -16,6 +16,7 @@ from src.backtest.portfolio import Portfolio
 from src.backtest.engine import BacktestEngine
 from src.backtest.metrics import calculate_all_metrics
 from src.backtest.optimization import OptunaOptimizer
+from src.pipeline.features.triple_barrier import apply_triple_barrier
 
 logger = get_logger(__name__)
 
@@ -116,9 +117,9 @@ class AppController:
         def _run():
             try:
                 # 1. Separar features y label
-                # Objetivo simple: predecir si el cierre de mañana será mayor al de hoy
+                # Objetivo Avanzado: Triple Barrera
                 df = self.processed_data.copy()
-                df['target'] = np.where(df['close'].shift(-1) > df['close'], 1, 0)
+                df['target'] = apply_triple_barrier(df, pt_factor=2.0, sl_factor=1.0, horizon=24, atr_col='atr_14')
                 df.dropna(inplace=True)
                 
                 # Split 80% train, 20% test cronológico

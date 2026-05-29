@@ -35,7 +35,20 @@ class SignalGenerator:
             pd.Series con señales (1, -1, 0).
         """
         if len(probabilities.shape) == 2:
-            prob_pos = probabilities[:, 1]
+            if probabilities.shape[1] == 3:
+                # Caso Multiclase (-1, 0, 1)
+                prob_short = probabilities[:, 0]
+                prob_long = probabilities[:, 2]
+                
+                signals = np.zeros(len(probabilities), dtype=int)
+                signals[prob_long >= self.buy_threshold] = 1
+                if self.enable_short:
+                    # En multiclase usamos un umbral directo para el corto, no el sell_threshold binario
+                    signals[prob_short >= self.buy_threshold] = -1
+                return pd.Series(signals, name='signal')
+            else:
+                # Caso Binario (0, 1)
+                prob_pos = probabilities[:, 1]
         else:
             prob_pos = probabilities
             

@@ -12,6 +12,7 @@ from src.backtest.walk_forward import WalkForwardValidator
 from src.backtest.portfolio import Portfolio
 from src.backtest.engine import BacktestEngine
 from src.backtest.metrics import calculate_all_metrics
+from src.pipeline.features.triple_barrier import apply_triple_barrier
 
 logger = get_logger(__name__)
 
@@ -44,22 +45,37 @@ class OptunaOptimizer:
         # 3. Evaluar en cada ventana de tiempo
         for i, (train_data, test_data) in enumerate(folds):
             try:
-                # Target preparation (next candle up/down)
-                train_target = np.where(train_data['close'].shift(-1) > train_data['close'], 1, 0)
-                test_target = np.where(test_data['close'].shift(-1) > test_data['close'], 1, 0)
-                
-                # Para evitar NaNs en el último registro por el shift
-                train_data = train_data.iloc[:-1].copy()
-                train_target = train_target[:-1]
-                test_data = test_data.iloc[:-1].copy()
-                test_target = test_target[:-1]
+                # Las características base deben calcularse *antes* del split o en el pipeline
+                # Como Triple Barrera necesita ATR, vamos a dejar que el pipeline genere las features en train
                 
                 # Pipeline: fit en train, transform en test
-                pipeline = PipelineOrchestrator.create_default(use_pca=True, pca_variance=pca_variance)
+                pipeline = PipelineOrchestrator.create_default(
+                    features=['atr_14', 'rsi_14', 'bollinger_bands', 'ema_distances', 'log_returns', 'rolling_volatility_20', 'momentum_ma_ratio_50', 'relative_volume_20'],
+                    use_pca=True, 
+                    pca_variance=pca_variance
+                )
                 
-                # Pipeline espera un DF. Guardamos columnas originales para el backtest.
                 X_train_proc = pipeline.fit_transform(train_data.copy())
                 X_test_proc = pipeline.transform(test_data.copy())
+                
+                # Target preparation (Triple Barrier) en la data procesada (porque el pipeline calculó ATR)
+                # Notar: El pipeline generó 'atr_14'
+                train_target = apply_triple_barrier(X_train_proc, pt_factor=2.0, sl_factor=1.0, horizon=24, atr_col='atr_14')
+                test_target = apply_triple_barrier(X_test_proc, pt_factor=2.0, sl_factor=1.0, horizon=24, atr_col='atr_14')
+                
+                # Remover NaNs causados por la Triple Barrera al final de las ventanas
+                valid_train = train_target.notna()
+                valid_test = test_target.notna()
+                
+                X_train_proc = X_train_proc[valid_train]
+                train_target = train_target[valid_train]
+                
+                X_test_proc = X_test_proc[valid_test]
+                test_target = test_target[valid_test]
+                
+                # El Target actual es -1, 0, 1. Lo convertimos de vuelta a pd.Series
+                train_target = pd.Series(train_target)
+                test_target = pd.Series(test_target)
                 
                 # Filtrar solo las features (pca_*)
                 drop_cols = ['open', 'high', 'low', 'close', 'tick_volume', 'spread', 'real_volume', 'time']
@@ -76,12 +92,15 @@ class OptunaOptimizer:
                 probs = model_manager.predict_proba(X_test_proc[feature_cols])
                 signal_gen = SignalGenerator(buy_threshold=buy_threshold, enable_short=True, sell_threshold=sell_threshold)
                 signals = signal_gen.generate(probs)
-                signals.index = test_data.index
+                signals.index = X_test_proc.index
                 
-                # Backtest (usamos los precios raw de test_data)
+                # Backtest (usamos los precios raw de test_data alineados con valid_test)
+                # OJO: X_test_proc tiene el mismo índice que test_data[valid_test]
+                backtest_data = test_data.loc[X_test_proc.index]
+                
                 portfolio = Portfolio(initial_capital=10000, max_drawdown_limit=0.20, kelly_fraction=0.5)
                 engine = BacktestEngine(portfolio)
-                engine.run(test_data, signals, symbol="SYMBOL_OPT")
+                engine.run(backtest_data, signals, symbol="SYMBOL_OPT")
                 
                 trades = portfolio.get_summary()
                 metrics = calculate_all_metrics(pd.Series(portfolio.equity_curve), trades, num_trials=1)

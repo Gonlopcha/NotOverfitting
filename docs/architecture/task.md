@@ -75,6 +75,12 @@ Esta es nuestra hoja de ruta viva. Iremos marcando las tareas según avancemos:
 - `[x]` Añadir pestaña de Optimización a `main_window.py`
 - `[ ]` Guardar/Serializar el modelo optimizado (pipeline + hiperparámetros) en `.joblib`
 
+## Fase 5.5 — Data Science & Advanced ML
+- `[x]` Implementar `src/pipeline/features/advanced_technical.py` (Nuevos features: ATR, RSI, MACD, etc)
+- `[x]` Implementar `src/pipeline/features/triple_barrier.py` (Etiquetado predictivo)
+- `[x]` Integrar Triple Barrera como "Target" en `app_controller.py`
+- `[x]` Integrar Triple Barrera en `optimization.py`
+
 ## Recomendaciones de Arquitectura (Deuda Técnica)
 *Tareas identificadas para alinear el código con la arquitectura oficial:*
 - `[x]` Crear archivos `__init__.py` en `src/core/` y `src/data/`

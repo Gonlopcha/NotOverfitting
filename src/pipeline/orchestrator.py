@@ -55,6 +55,9 @@ class PipelineOrchestrator(PipelineStep):
         pca_variance: float = 0.95
     ) -> 'PipelineOrchestrator':
         """Crea el pipeline estándar definido en la arquitectura."""
+        if features is None:
+            features = ['atr_14', 'rsi_14', 'bollinger_bands', 'ema_distances', 'log_returns', 'rolling_volatility_20', 'momentum_ma_ratio_50', 'relative_volume_20']
+            
         steps = [
             DataCleaner(fill_method='ffill', outlier_std=3.0, columns_to_clean=['volume', 'close']),
             FeatureGenerator(features=features)
