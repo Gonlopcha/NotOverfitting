@@ -30,13 +30,19 @@ Esta es nuestra hoja de ruta viva. Iremos marcando las tareas según avancemos:
 - `[x]` Implementar `src/data/data_manager.py` (Orquestador de descargas y validación)
 
 ### 4. Pruebas y Validación (Fase 1)
-- `[ ]` Tests unitarios de la capa Core
-- `[ ]` Tests unitarios de la capa Data
+- `[x]` Tests unitarios de la capa Core
+- `[x]` Tests unitarios de la capa Data
 
 ---
 
-## Fase 2 — Pipeline (Próximamente)
-- `[ ]` (Las tareas de esta fase se añadirán al terminar la Fase 1)
+## Fase 2 — Pipeline (Capa de Ingeniería de Características)
+- `[x]` Implementar `src/pipeline/base.py` (Clase base `PipelineStep`)
+- `[x]` Implementar `src/pipeline/cleaner.py` (Limpieza e imputación)
+- `[x]` Implementar `src/pipeline/feature_generator.py` (Motor de generación usando Registry)
+- `[ ]` Implementar modulo `src/pipeline/features/` (Técnicas, Estadísticas, etc.)
+- `[ ]` Implementar `src/pipeline/pca_transformer.py` (Transformador PCA)
+- `[ ]` Implementar `src/pipeline/orchestrator.py` (Coordinador del pipeline)
+- `[ ]` Pruebas de reproducibilidad del pipeline
 
 ---
 

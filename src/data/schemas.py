@@ -96,7 +96,7 @@ class DataMetadata(BaseModel):
         last_updated: Timestamp de última actualización
     """
     symbol: str = Field(..., min_length=1, max_length=20)
-    timeframe: Optional[str] = Field(None, regex=r'^(M1|M5|M15|M30|H1|H4|D1|W1|MN1)$')
+    timeframe: Optional[str] = Field(None, pattern=r'^(M1|M5|M15|M30|H1|H4|D1|W1|MN1)$')
     data_type: DataType = DataType.OHLCV
     date_from: datetime
     date_to: datetime
@@ -134,7 +134,7 @@ class CacheEntry(BaseModel):
         rows: Número de registros en caché
     """
     symbol: str = Field(..., min_length=1, max_length=20)
-    timeframe: str = Field(..., regex=r'^(M1|M5|M15|M30|H1|H4|D1|W1|MN1)$')
+    timeframe: str = Field(..., pattern=r'^(M1|M5|M15|M30|H1|H4|D1|W1|MN1)$')
     date_from: datetime
     date_to: datetime
     cached_at: datetime = Field(default_factory=datetime.now)
@@ -161,7 +161,7 @@ class DownloadRequest(BaseModel):
         force_refresh: Si True, ignora caché y descarga siempre
     """
     symbol: str = Field(..., min_length=1, max_length=20)
-    timeframe: Optional[str] = Field(None, regex=r'^(M1|M5|M15|M30|H1|H4|D1|W1|MN1)$')
+    timeframe: Optional[str] = Field(None, pattern=r'^(M1|M5|M15|M30|H1|H4|D1|W1|MN1)$')
     data_type: DataType = DataType.OHLCV
     from_dt: datetime
     to_dt: datetime = Field(default_factory=datetime.now)
