@@ -3,13 +3,18 @@ from PySide6.QtWidgets import (
     QLabel, QLineEdit, QFormLayout, QGroupBox, QComboBox,
     QDateEdit, QTextEdit
 )
-from PySide6.QtCore import Qt, QDate
+from PySide6.QtCore import Qt, QDate, Signal
 from src.core.event_bus import subscribe, emit
 from src.core.logger import get_logger
 
 logger = get_logger(__name__)
 
 class DataPanel(QWidget):
+    sig_mt5_connected = Signal(dict)
+    sig_mt5_error = Signal(dict)
+    sig_download_completed = Signal(dict)
+    sig_download_error = Signal(dict)
+    
     def __init__(self):
         super().__init__()
         self.init_ui()
@@ -79,6 +84,12 @@ class DataPanel(QWidget):
         subscribe("data.download.error", self.on_download_error)
         subscribe("mt5.connected", self.on_mt5_connected)
         subscribe("mt5.error", self.on_mt5_error)
+        
+        # Conectar Signals al GUI
+        self.sig_mt5_connected.connect(self._gui_mt5_connected)
+        self.sig_mt5_error.connect(self._gui_mt5_error)
+        self.sig_download_completed.connect(self._gui_download_completed)
+        self.sig_download_error.connect(self._gui_download_error)
 
     def append_log(self, text: str):
         self.console.append(text)
@@ -105,22 +116,35 @@ class DataPanel(QWidget):
         # Emitimos al EventBus
         emit("data.download.request", symbol=sym, tf=tf, date_from=d_from, date_to=d_to)
         
-    # --- Event Handlers (Vienen desde el backend vía EventBus) ---
+    # --- Event Handlers (Vienen del EventBus en hilos secundarios) ---
     def on_mt5_connected(self, **kwargs):
+        self.sig_mt5_connected.emit(kwargs)
+        
+    def on_mt5_error(self, **kwargs):
+        self.sig_mt5_error.emit(kwargs)
+        
+    def on_download_completed(self, **kwargs):
+        self.sig_download_completed.emit(kwargs)
+        
+    def on_download_error(self, **kwargs):
+        self.sig_download_error.emit(kwargs)
+
+    # --- Actualizaciones de GUI (En el hilo principal) ---
+    def _gui_mt5_connected(self, kwargs):
         self.append_log("✅ Conectado a MetaTrader 5 exitosamente.")
         self.btn_connect.setEnabled(True)
         
-    def on_mt5_error(self, **kwargs):
+    def _gui_mt5_error(self, kwargs):
         self.append_log(f"❌ Error MT5: {kwargs.get('error')}")
         self.btn_connect.setEnabled(True)
         
-    def on_download_completed(self, **kwargs):
+    def _gui_download_completed(self, kwargs):
         sym = kwargs.get('symbol')
         rows = kwargs.get('rows', 0)
         self.append_log(f"✅ Descarga completada: {sym} ({rows} velas) guardadas en Parquet.")
         self.btn_download.setEnabled(True)
         
-    def on_download_error(self, **kwargs):
+    def _gui_download_error(self, kwargs):
         error = kwargs.get('error', 'Unknown')
         self.append_log(f"❌ Error en descarga: {error}")
         self.btn_download.setEnabled(True)

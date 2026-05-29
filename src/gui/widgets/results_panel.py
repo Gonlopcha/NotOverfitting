@@ -2,10 +2,12 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, 
     QLabel, QHeaderView, QTextEdit
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from src.core.event_bus import subscribe
 
 class ResultsPanel(QWidget):
+    sig_backtest_completed = Signal(dict)
+    
     def __init__(self):
         super().__init__()
         self.init_ui()
@@ -36,8 +38,12 @@ class ResultsPanel(QWidget):
         
     def init_subscriptions(self):
         subscribe("backtest.completed", self.on_backtest_completed)
+        self.sig_backtest_completed.connect(self._gui_backtest_completed)
         
     def on_backtest_completed(self, **kwargs):
+        self.sig_backtest_completed.emit(kwargs)
+        
+    def _gui_backtest_completed(self, kwargs):
         metrics = kwargs.get('metrics', {})
         mda_log = kwargs.get('mda_log', '')
         

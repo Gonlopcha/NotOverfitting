@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (
     QLabel, QLineEdit, QFormLayout, QGroupBox, QCheckBox,
     QDoubleSpinBox, QListWidget, QListWidgetItem, QTextEdit
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from src.core.event_bus import subscribe, emit
 from src.core.registry import get_feature_registry
 from src.core.logger import get_logger
@@ -11,6 +11,9 @@ from src.core.logger import get_logger
 logger = get_logger(__name__)
 
 class PipelinePanel(QWidget):
+    sig_pipeline_completed = Signal(dict)
+    sig_pipeline_error = Signal(dict)
+    
     def __init__(self):
         super().__init__()
         self.init_ui()
@@ -91,6 +94,9 @@ class PipelinePanel(QWidget):
     def init_subscriptions(self):
         subscribe("pipeline.run.completed", self.on_pipeline_completed)
         subscribe("pipeline.run.error", self.on_pipeline_error)
+        
+        self.sig_pipeline_completed.connect(self._gui_pipeline_completed)
+        self.sig_pipeline_error.connect(self._gui_pipeline_error)
 
     def append_log(self, text: str):
         self.console.append(text)
@@ -113,10 +119,16 @@ class PipelinePanel(QWidget):
              pca_variance=self.pca_variance.value())
              
     def on_pipeline_completed(self, **kwargs):
+        self.sig_pipeline_completed.emit(kwargs)
+        
+    def on_pipeline_error(self, **kwargs):
+        self.sig_pipeline_error.emit(kwargs)
+
+    def _gui_pipeline_completed(self, kwargs):
         self.append_log("✅ Pipeline ejecutado exitosamente. Datos transformados.")
         self.btn_run_pipeline.setEnabled(True)
         
-    def on_pipeline_error(self, **kwargs):
+    def _gui_pipeline_error(self, kwargs):
         error = kwargs.get('error', 'Unknown')
         self.append_log(f"❌ Error en Pipeline: {error}")
         self.btn_run_pipeline.setEnabled(True)

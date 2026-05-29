@@ -3,13 +3,17 @@ from PySide6.QtWidgets import (
     QLabel, QFormLayout, QGroupBox, QComboBox,
     QDoubleSpinBox, QTextEdit
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from src.core.event_bus import subscribe, emit
 from src.core.logger import get_logger
 
 logger = get_logger(__name__)
 
 class BacktestPanel(QWidget):
+    sig_progress = Signal(dict)
+    sig_completed = Signal(dict)
+    sig_error = Signal(dict)
+    
     def __init__(self):
         super().__init__()
         self.init_ui()
@@ -71,6 +75,10 @@ class BacktestPanel(QWidget):
         subscribe("backtest.progress", self.on_progress)
         subscribe("backtest.completed", self.on_completed)
         subscribe("backtest.error", self.on_error)
+        
+        self.sig_progress.connect(self._gui_progress)
+        self.sig_completed.connect(self._gui_completed)
+        self.sig_error.connect(self._gui_error)
 
     def append_log(self, text: str):
         self.console.append(text)
@@ -86,14 +94,23 @@ class BacktestPanel(QWidget):
              kelly_fraction=self.kelly_fraction.value())
              
     def on_progress(self, **kwargs):
+        self.sig_progress.emit(kwargs)
+        
+    def on_completed(self, **kwargs):
+        self.sig_completed.emit(kwargs)
+        
+    def on_error(self, **kwargs):
+        self.sig_error.emit(kwargs)
+
+    def _gui_progress(self, kwargs):
         progress = kwargs.get('progress', 0)
         self.append_log(f"Progreso: {progress:.1f}%")
         
-    def on_completed(self, **kwargs):
+    def _gui_completed(self, kwargs):
         self.append_log("✅ Backtesting completado. Revisa la pestaña de Resultados.")
         self.btn_run_backtest.setEnabled(True)
         
-    def on_error(self, **kwargs):
+    def _gui_error(self, kwargs):
         error = kwargs.get('error', 'Unknown')
         self.append_log(f"❌ Error en Backtest: {error}")
         self.btn_run_backtest.setEnabled(True)
