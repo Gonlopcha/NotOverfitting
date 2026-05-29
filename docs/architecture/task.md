@@ -65,7 +65,7 @@ Esta es nuestra hoja de ruta viva. Iremos marcando las tareas según avancemos:
 - `[x]` Implementar `src/gui/widgets/results_panel.py` (Métricas y gráficos básicos)
 - `[x]` Implementar `src/gui/styles/dark_theme.qss` (Tema científico oscuro)
 - `[x]` Integrar `main.py` para levantar la app
-- `[ ]` Conectar todos los paneles a la capa lógica usando el `EventBus`
+- `[x]` Conectar todos los paneles a la capa lógica usando el `EventBus`
 
 ## Recomendaciones de Arquitectura (Deuda Técnica)
 *Tareas identificadas para alinear el código con la arquitectura oficial:*

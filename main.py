@@ -3,11 +3,15 @@ import os
 from PySide6.QtWidgets import QApplication
 from src.gui.main_window import MainWindow
 from src.core.logger import get_logger
+from src.core.app_controller import AppController
 
 def main():
     # Inicializa el logger root a través del singleton si no se ha hecho
     logger = get_logger("main")
     logger.info("Iniciando NotOverfitting (Scientific Trading Suite)")
+    
+    # Iniciar el controlador que enlaza Backend y Frontend
+    controller = AppController()
 
     app = QApplication(sys.argv)
     
