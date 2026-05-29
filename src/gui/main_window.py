@@ -2,6 +2,8 @@ from PySide6.QtWidgets import QMainWindow, QTabWidget, QWidget, QVBoxLayout, QLa
 from PySide6.QtCore import Qt
 from src.gui.widgets.data_panel import DataPanel
 from src.gui.widgets.pipeline_panel import PipelinePanel
+from src.gui.widgets.backtest_panel import BacktestPanel
+from src.gui.widgets.results_panel import ResultsPanel
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -37,9 +39,9 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.pipeline_tab, "Pipeline & PCA")
         
         # Strategy & Backtest Panel
-        self.backtest_tab = QWidget()
+        self.backtest_tab = BacktestPanel()
         self.tabs.addTab(self.backtest_tab, "Backtest & Model")
         
         # Results Panel
-        self.results_tab = QWidget()
+        self.results_tab = ResultsPanel()
         self.tabs.addTab(self.results_tab, "Results & Metrics")
