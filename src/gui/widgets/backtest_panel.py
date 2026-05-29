@@ -61,9 +61,14 @@ class BacktestPanel(QWidget):
         layout.addWidget(risk_group)
         
         # Botón de ejecución
-        self.btn_run_backtest = QPushButton("Ejecutar Simulación Event-Driven")
+        self.btn_run_backtest = QPushButton("Ejecutar Simulación (Modelo Nuevo)")
         self.btn_run_backtest.clicked.connect(self.on_run_clicked)
         layout.addWidget(self.btn_run_backtest)
+        
+        self.btn_run_saved = QPushButton("Cargar Modelo Guardado (.joblib) y Simular")
+        self.btn_run_saved.setStyleSheet("background-color: #2e7d32; color: white; font-weight: bold;")
+        self.btn_run_saved.clicked.connect(self.on_run_saved_clicked)
+        layout.addWidget(self.btn_run_saved)
         
         # Consola
         self.console = QTextEdit()
@@ -85,13 +90,27 @@ class BacktestPanel(QWidget):
         
     def on_run_clicked(self):
         self.btn_run_backtest.setEnabled(False)
+        self.btn_run_saved.setEnabled(False)
         self.append_log("Iniciando backtest out-of-sample...")
         
         emit("backtest.run.request",
              strategy=self.strategy_combo.currentText(),
              initial_capital=self.initial_capital.value(),
              max_drawdown=self.max_drawdown.value(),
-             kelly_fraction=self.kelly_fraction.value())
+             kelly_fraction=self.kelly_fraction.value(),
+             use_saved_model=False)
+
+    def on_run_saved_clicked(self):
+        self.btn_run_backtest.setEnabled(False)
+        self.btn_run_saved.setEnabled(False)
+        self.append_log("Cargando modelo .joblib y ejecutando backtest...")
+        
+        emit("backtest.run.request",
+             strategy="SavedModel",
+             initial_capital=self.initial_capital.value(),
+             max_drawdown=self.max_drawdown.value(),
+             kelly_fraction=self.kelly_fraction.value(),
+             use_saved_model=True)
              
     def on_progress(self, **kwargs):
         self.sig_progress.emit(kwargs)
@@ -109,8 +128,10 @@ class BacktestPanel(QWidget):
     def _gui_completed(self, kwargs):
         self.append_log("✅ Backtesting completado. Revisa la pestaña de Resultados.")
         self.btn_run_backtest.setEnabled(True)
+        self.btn_run_saved.setEnabled(True)
         
     def _gui_error(self, kwargs):
         error = kwargs.get('error', 'Unknown')
         self.append_log(f"❌ Error en Backtest: {error}")
         self.btn_run_backtest.setEnabled(True)
+        self.btn_run_saved.setEnabled(True)

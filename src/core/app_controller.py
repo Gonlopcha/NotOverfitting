@@ -116,51 +116,87 @@ class AppController:
         
         def _run():
             try:
-                # 1. Separar features y label
-                # Objetivo Avanzado: Triple Barrera
-                df = self.processed_data.copy()
-                df['target'] = apply_triple_barrier(df, pt_factor=2.0, sl_factor=1.0, horizon=24, atr_col='atr_14')
-                df.dropna(inplace=True)
+                use_saved = kwargs.get("use_saved_model", False)
+                mda_log = ""
                 
-                # Split 80% train, 20% test cronológico
-                split_idx = int(len(df) * 0.8)
-                train_df = df.iloc[:split_idx]
-                test_df = df.iloc[split_idx:]
-                
-                # Excluir columnas base para no hacer trampa, quedarnos con 'pca_' o features calculadas
-                drop_cols = ['target', 'open', 'high', 'low', 'close', 'tick_volume', 'spread', 'real_volume']
-                feature_cols = [c for c in df.columns if c not in drop_cols and not c.startswith('time')]
-                
-                if not feature_cols:
-                    emit("backtest.error", error="No se encontraron features (ej. pca_0) tras el pipeline.")
-                    return
-                
-                X_train = train_df[feature_cols]
-                y_train = train_df['target']
-                X_test = test_df[feature_cols]
-                y_test = test_df['target']
-                
-                # 2. Entrenar Modelo y calcular MDA
-                model_manager = ModelManager()
-                model_manager.train(X_train, y_train)
-                
-                mda_df = model_manager.calculate_mda(X_test, y_test)
-                mda_log = mda_df.to_string()
-                
-                # 3. Generar señales predictivas
-                probs = model_manager.predict_proba(X_test)
-                # Umbrales asimétricos: > 0.55 compra, < 0.45 venta (asumiendo binario)
-                signal_gen = SignalGenerator(buy_threshold=0.55, enable_short=True, sell_threshold=0.45)
-                signals = signal_gen.generate(probs)
-                
-                # Asegurar alineación de índices
-                # Las señales devueltas por SignalGenerator pierden el índice, se lo reasignamos
-                signals.index = X_test.index
+                if use_saved:
+                    import joblib
+                    import os
+                    model_path = os.path.join("models", "optimized_production_model.joblib")
+                    if not os.path.exists(model_path):
+                        emit("backtest.error", error="No se encontró modelo guardado. Corre Optuna primero.")
+                        return
+                    
+                    saved_data = joblib.load(model_path)
+                    saved_pipeline = saved_data['pipeline']
+                    saved_model_manager = saved_data['model_manager']
+                    saved_features = saved_data['features']
+                    buy_threshold = saved_data['buy_threshold']
+                    sell_threshold = saved_data['sell_threshold']
+                    
+                    df_proc = saved_pipeline.transform(self.current_data.copy())
+                    
+                    # Para el backtest out of sample visual, aplicamos target para validación
+                    target = apply_triple_barrier(df_proc, pt_factor=2.0, sl_factor=1.0, horizon=24, atr_col='atr_14')
+                    valid = target.notna()
+                    X_test = df_proc[valid][saved_features]
+                    df_backtest = df_proc[valid]
+                    
+                    model_manager = saved_model_manager
+                    probs = model_manager.predict_proba(X_test)
+                    
+                    signal_gen = SignalGenerator(buy_threshold=buy_threshold, enable_short=True, sell_threshold=sell_threshold)
+                    signals = signal_gen.generate(probs)
+                    signals.index = X_test.index
+                    
+                    mda_log = "Utilizando modelo pre-entrenado (.joblib).\n" \
+                              f"Buy Threshold: {buy_threshold:.4f}\nSell Threshold: {sell_threshold:.4f}\n" \
+                              f"Features usadas: {len(saved_features)}"
+                              
+                else:
+                    # 1. Separar features y label
+                    # Objetivo Avanzado: Triple Barrera
+                    df = self.processed_data.copy()
+                    df['target'] = apply_triple_barrier(df, pt_factor=2.0, sl_factor=1.0, horizon=24, atr_col='atr_14')
+                    df.dropna(inplace=True)
+                    
+                    # Split 80% train, 20% test cronológico
+                    split_idx = int(len(df) * 0.8)
+                    train_df = df.iloc[:split_idx]
+                    test_df = df.iloc[split_idx:]
+                    
+                    # Excluir columnas base para no hacer trampa, quedarnos con 'pca_' o features calculadas
+                    drop_cols = ['target', 'open', 'high', 'low', 'close', 'tick_volume', 'spread', 'real_volume']
+                    feature_cols = [c for c in df.columns if c not in drop_cols and not c.startswith('time')]
+                    
+                    if not feature_cols:
+                        emit("backtest.error", error="No se encontraron features (ej. pca_0) tras el pipeline.")
+                        return
+                    
+                    X_train = train_df[feature_cols]
+                    y_train = train_df['target']
+                    X_test = test_df[feature_cols]
+                    y_test = test_df['target']
+                    df_backtest = test_df
+                    
+                    # 2. Entrenar Modelo y calcular MDA
+                    model_manager = ModelManager()
+                    model_manager.train(X_train, y_train)
+                    
+                    mda_df = model_manager.calculate_mda(X_test, y_test)
+                    mda_log = mda_df.to_string()
+                    
+                    # 3. Generar señales predictivas
+                    probs = model_manager.predict_proba(X_test)
+                    # Umbrales asimétricos: > 0.55 compra, < 0.45 venta (asumiendo binario)
+                    signal_gen = SignalGenerator(buy_threshold=0.55, enable_short=True, sell_threshold=0.45)
+                    signals = signal_gen.generate(probs)
+                    signals.index = X_test.index
                 
                 # 4. Ejecutar Backtest Event-Driven
                 portfolio = Portfolio(initial_capital, max_drawdown, kelly_fraction)
                 engine = BacktestEngine(portfolio)
-                engine.run(test_df, signals, symbol="SYMBOL_LIVE")
+                engine.run(df_backtest, signals, symbol="SYMBOL_LIVE")
                 
                 # 5. Calcular Métricas
                 trades = portfolio.get_summary()
