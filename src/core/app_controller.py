@@ -35,10 +35,10 @@ class AppController:
         subscribe("pipeline.run.request", self.handle_pipeline_run)
         subscribe("backtest.run.request", self.handle_backtest_run)
         
-    def handle_mt5_connect(self, event):
-        login = event.data.get("login")
-        password = event.data.get("password")
-        server = event.data.get("server")
+    def handle_mt5_connect(self, **kwargs):
+        login = kwargs.get("login")
+        password = kwargs.get("password")
+        server = kwargs.get("server")
         
         def _connect():
             try:
@@ -53,11 +53,11 @@ class AppController:
                 
         threading.Thread(target=_connect, daemon=True).start()
         
-    def handle_data_download(self, event):
-        symbol = event.data.get("symbol")
-        tf = event.data.get("tf")
-        d_from = event.data.get("date_from")
-        d_to = event.data.get("date_to")
+    def handle_data_download(self, **kwargs):
+        symbol = kwargs.get("symbol")
+        tf = kwargs.get("tf")
+        d_from = kwargs.get("date_from")
+        d_to = kwargs.get("date_to")
         
         def _download():
             try:
@@ -71,15 +71,15 @@ class AppController:
                 
         threading.Thread(target=_download, daemon=True).start()
         
-    def handle_pipeline_run(self, event):
+    def handle_pipeline_run(self, **kwargs):
         if self.current_data is None:
             emit("pipeline.run.error", error="No hay datos cargados. Descarga datos primero.")
             return
             
-        outlier_std = event.data.get("outlier_std", 3.0)
-        features = event.data.get("features", [])
-        use_pca = event.data.get("use_pca", True)
-        pca_variance = event.data.get("pca_variance", 0.95)
+        outlier_std = kwargs.get("outlier_std", 3.0)
+        features = kwargs.get("features", [])
+        use_pca = kwargs.get("use_pca", True)
+        pca_variance = kwargs.get("pca_variance", 0.95)
         
         def _run():
             try:
@@ -95,14 +95,14 @@ class AppController:
                 
         threading.Thread(target=_run, daemon=True).start()
         
-    def handle_backtest_run(self, event):
+    def handle_backtest_run(self, **kwargs):
         if self.processed_data is None:
             emit("backtest.error", error="Debes ejecutar el Pipeline antes de hacer backtesting.")
             return
             
-        initial_capital = event.data.get("initial_capital", 10000.0)
-        max_drawdown = event.data.get("max_drawdown", 0.20)
-        kelly_fraction = event.data.get("kelly_fraction", 0.5)
+        initial_capital = kwargs.get("initial_capital", 10000.0)
+        max_drawdown = kwargs.get("max_drawdown", 0.20)
+        kelly_fraction = kwargs.get("kelly_fraction", 0.5)
         
         def _run():
             try:

@@ -112,11 +112,11 @@ class PipelinePanel(QWidget):
              use_pca=self.enable_pca.isChecked(),
              pca_variance=self.pca_variance.value())
              
-    def on_pipeline_completed(self, event):
+    def on_pipeline_completed(self, **kwargs):
         self.append_log("✅ Pipeline ejecutado exitosamente. Datos transformados.")
         self.btn_run_pipeline.setEnabled(True)
         
-    def on_pipeline_error(self, event):
-        error = event.data.get('error', 'Unknown')
+    def on_pipeline_error(self, **kwargs):
+        error = kwargs.get('error', 'Unknown')
         self.append_log(f"❌ Error en Pipeline: {error}")
         self.btn_run_pipeline.setEnabled(True)

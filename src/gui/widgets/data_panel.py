@@ -106,21 +106,21 @@ class DataPanel(QWidget):
         emit("data.download.request", symbol=sym, tf=tf, date_from=d_from, date_to=d_to)
         
     # --- Event Handlers (Vienen desde el backend vía EventBus) ---
-    def on_mt5_connected(self, event):
+    def on_mt5_connected(self, **kwargs):
         self.append_log("✅ Conectado a MetaTrader 5 exitosamente.")
         self.btn_connect.setEnabled(True)
         
-    def on_mt5_error(self, event):
-        self.append_log(f"❌ Error MT5: {event.data.get('error')}")
+    def on_mt5_error(self, **kwargs):
+        self.append_log(f"❌ Error MT5: {kwargs.get('error')}")
         self.btn_connect.setEnabled(True)
         
-    def on_download_completed(self, event):
-        sym = event.data.get('symbol')
-        rows = event.data.get('rows', 0)
+    def on_download_completed(self, **kwargs):
+        sym = kwargs.get('symbol')
+        rows = kwargs.get('rows', 0)
         self.append_log(f"✅ Descarga completada: {sym} ({rows} velas) guardadas en Parquet.")
         self.btn_download.setEnabled(True)
         
-    def on_download_error(self, event):
-        error = event.data.get('error', 'Unknown')
+    def on_download_error(self, **kwargs):
+        error = kwargs.get('error', 'Unknown')
         self.append_log(f"❌ Error en descarga: {error}")
         self.btn_download.setEnabled(True)

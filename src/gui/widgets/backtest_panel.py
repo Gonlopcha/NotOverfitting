@@ -85,15 +85,15 @@ class BacktestPanel(QWidget):
              max_drawdown=self.max_drawdown.value(),
              kelly_fraction=self.kelly_fraction.value())
              
-    def on_progress(self, event):
-        progress = event.data.get('progress', 0)
+    def on_progress(self, **kwargs):
+        progress = kwargs.get('progress', 0)
         self.append_log(f"Progreso: {progress:.1f}%")
         
-    def on_completed(self, event):
+    def on_completed(self, **kwargs):
         self.append_log("✅ Backtesting completado. Revisa la pestaña de Resultados.")
         self.btn_run_backtest.setEnabled(True)
         
-    def on_error(self, event):
-        error = event.data.get('error', 'Unknown')
+    def on_error(self, **kwargs):
+        error = kwargs.get('error', 'Unknown')
         self.append_log(f"❌ Error en Backtest: {error}")
         self.btn_run_backtest.setEnabled(True)

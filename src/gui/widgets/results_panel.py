@@ -37,9 +37,9 @@ class ResultsPanel(QWidget):
     def init_subscriptions(self):
         subscribe("backtest.completed", self.on_backtest_completed)
         
-    def on_backtest_completed(self, event):
-        metrics = event.data.get('metrics', {})
-        mda_log = event.data.get('mda_log', '')
+    def on_backtest_completed(self, **kwargs):
+        metrics = kwargs.get('metrics', {})
+        mda_log = kwargs.get('mda_log', '')
         
         # Actualizar tabla
         self.metrics_table.setRowCount(0)
