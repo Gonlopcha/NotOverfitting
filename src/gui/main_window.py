@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import QMainWindow, QTabWidget, QWidget, QVBoxLayout, QLabel
 from PySide6.QtCore import Qt
 from src.gui.widgets.data_panel import DataPanel
+from src.gui.widgets.pipeline_panel import PipelinePanel
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -32,7 +33,7 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.data_tab, "Data & MT5")
         
         # Pipeline Panel
-        self.pipeline_tab = QWidget()
+        self.pipeline_tab = PipelinePanel()
         self.tabs.addTab(self.pipeline_tab, "Pipeline & PCA")
         
         # Strategy & Backtest Panel

@@ -59,8 +59,8 @@ Esta es nuestra hoja de ruta viva. Iremos marcando las tareas según avancemos:
 
 ## Fase 4 — GUI (Frontend con PySide6)
 - `[x]` Implementar `src/gui/main_window.py` (Ventana principal con tabs)
-- `[ ]` Implementar `src/gui/widgets/data_panel.py` (Conexión MT5 y descargas)
-- `[ ]` Implementar `src/gui/widgets/pipeline_panel.py` (Configuración de variables y PCA)
+- `[x]` Implementar `src/gui/widgets/data_panel.py` (Conexión MT5 y descargas)
+- `[x]` Implementar `src/gui/widgets/pipeline_panel.py` (Configuración de variables y PCA)
 - `[ ]` Implementar `src/gui/widgets/backtest_panel.py` (Ejecución de simulación)
 - `[ ]` Implementar `src/gui/widgets/results_panel.py` (Métricas y gráficos básicos)
 - `[x]` Implementar `src/gui/styles/dark_theme.qss` (Tema científico oscuro)
