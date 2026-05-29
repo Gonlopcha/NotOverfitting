@@ -36,9 +36,9 @@ class Registry:
         self._components: Dict[str, Dict[str, Any]] = {}
         self._lock = threading.RLock()
 
-    def register(self, name: str, component: Any, metadata: Optional[Dict[str, Any]] = None) -> None:
+    def register(self, name: str, component: Any = None, metadata: Optional[Dict[str, Any]] = None) -> Any:
         """
-        Registra un componente en el registry.
+        Registra un componente en el registry. Puede usarse como función o decorador.
         
         Args:
             name: Identificador único del componente
@@ -53,7 +53,18 @@ class Registry:
             >>> def my_feature(df):
             ...     return df['high'] - df['low']
             >>> registry.register('volatility', my_feature, {'description': 'Simple volatility'})
+            
+            Como decorador:
+            >>> @registry.register('volatility')
+            >>> def my_feature(df): return df
         """
+        if component is None:
+            # Uso como decorador
+            def decorator(comp: Any):
+                self.register(name, comp, metadata)
+                return comp
+            return decorator
+
         with self._lock:
             if name in self._components:
                 raise RegistryError(

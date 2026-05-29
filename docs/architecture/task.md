@@ -39,10 +39,10 @@ Esta es nuestra hoja de ruta viva. Iremos marcando las tareas según avancemos:
 - `[x]` Implementar `src/pipeline/base.py` (Clase base `PipelineStep`)
 - `[x]` Implementar `src/pipeline/cleaner.py` (Limpieza e imputación)
 - `[x]` Implementar `src/pipeline/feature_generator.py` (Motor de generación usando Registry)
-- `[ ]` Implementar modulo `src/pipeline/features/` (Técnicas, Estadísticas, etc.)
-- `[ ]` Implementar `src/pipeline/pca_transformer.py` (Transformador PCA)
-- `[ ]` Implementar `src/pipeline/orchestrator.py` (Coordinador del pipeline)
-- `[ ]` Pruebas de reproducibilidad del pipeline
+- `[x]` Implementar modulo `src/pipeline/features/` (Técnicas, Estadísticas, etc.)
+- `[x]` Implementar `src/pipeline/pca_transformer.py` (Transformador PCA)
+- `[x]` Implementar `src/pipeline/orchestrator.py` (Coordinador del pipeline)
+- `[x]` Pruebas de reproducibilidad del pipeline
 
 ---
 
