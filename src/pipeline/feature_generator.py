@@ -22,7 +22,6 @@ class FeatureGenerator(PipelineStep):
         """
         super().__init__(**kwargs)
         self.params['features'] = features
-        self.registry = get_feature_registry()
 
     def fit(self, X: pd.DataFrame, y: Any = None) -> 'FeatureGenerator':
         """
@@ -35,18 +34,21 @@ class FeatureGenerator(PipelineStep):
         """
         Aplica todas las funciones solicitadas.
         """
+        from src.core.registry import get_feature_registry
+        registry = get_feature_registry()
+        
         df = X.copy()
         
         features_to_apply = self.params['features']
         if features_to_apply is None:
             # Aplicar todas las registradas
-            features_to_apply = list(self.registry.get_all().keys())
+            features_to_apply = list(registry.get_all().keys())
             
         logger.info(f"FeatureGenerator aplicando {len(features_to_apply)} features: {features_to_apply}")
         
         for feat_name in features_to_apply:
             try:
-                feature_func = self.registry.get(feat_name)
+                feature_func = registry.get(feat_name)
                 # Asumimos que la función retorna un pd.Series, un pd.DataFrame
                 # o el DataFrame completo modificado.
                 result = feature_func(df)

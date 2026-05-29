@@ -183,3 +183,5 @@ cython_debug/
 data_store/ohlcv/EURUSD/H1/2025.parquet
 data_store/metadata.db
 data_store/ohlcv/EURUSD/H1/2020.parquet
+models/optimized_production_model.joblib
+notoverfitting.log.1

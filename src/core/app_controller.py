@@ -226,6 +226,35 @@ class AppController:
                 logger.info(f"✅ Modelo de producción guardado exitosamente en: {final_model_path}")
                 emit("log.message", message=f"Modelo guardado en {final_model_path}")
                 
+                # Ejecutar un Backtest final sobre todo el dataset histórico (In-Sample) para obtener métricas detalladas
+                logger.info("Ejecutando Backtest Final para extraer métricas completas...")
+                probs = model_manager.predict_proba(df_proc[feature_cols])
+                signal_gen = SignalGenerator(buy_threshold=best_params['buy_threshold'], enable_short=True, sell_threshold=best_params['sell_threshold'])
+                signals = signal_gen.generate(probs)
+                signals.index = df_proc.index
+                
+                from src.backtest.portfolio import Portfolio
+                from src.backtest.engine import BacktestEngine
+                from src.backtest.metrics import calculate_all_metrics
+                
+                backtest_data = self.current_data.loc[df_proc.index]
+                portfolio = Portfolio(initial_capital=10000, max_drawdown_limit=0.20, kelly_fraction=0.5)
+                engine = BacktestEngine(portfolio)
+                engine.run(backtest_data, signals, symbol="SYMBOL_LIVE")
+                
+                trades = portfolio.get_summary()
+                metrics = calculate_all_metrics(pd.Series(portfolio.equity_curve), trades, num_trials=1)
+                
+                logger.info("\n========== MÉTRICAS FINALES (HISTÓRICO COMPLETO) ==========")
+                for k, v in metrics.items():
+                    if isinstance(v, float):
+                        logger.info(f"{k}: {v:.4f}")
+                    else:
+                        logger.info(f"{k}: {v}")
+                logger.info("==========================================================")
+                
+                emit("log.message", message=f"Métricas finales calculadas. Sharpe Histórico: {metrics.get('Sharpe Ratio', 0.0)}")
+                
             except Exception as e:
                 logger.exception("Error en optimización")
                 emit("optimization.error", error=str(e))
