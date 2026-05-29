@@ -3,6 +3,7 @@ DataManager: Orquestador centralizado de descarga, validación y almacenamiento 
 
 Integra MT5Connector, CacheManager, DataStore y esquemas de validación en un flujo unificado.
 Emite eventos del sistema y maneja errores de forma robusta.
+Soporta datos OHLCV y Ticks.
 """
 
 import threading
@@ -16,14 +17,14 @@ from src.core.exceptions import DataDownloadError
 from src.core.mt5_connector import MT5Connector
 from src.data.cache_manager import CacheManager
 from src.data.data_store import DataStore
-from src.data.schemas import validate_ohlcv_dataframe, DownloadRequest
+from src.data.schemas import validate_ohlcv_dataframe, validate_ticks_dataframe, DownloadRequest, DataType
 
 logger = get_logger(__name__)
 
 
 class DataManager:
     """
-    Orquestador centralizado para gestión de datos OHLCV.
+    Orquestador centralizado para gestión de datos OHLCV y Ticks.
 
     Integra:
     - MT5Connector: Descarga de datos desde MetaTrader 5
@@ -31,10 +32,24 @@ class DataManager:
     - DataStore: Almacenamiento persistente (SQLite + Parquet)
     - Validación: Esquemas Pydantic y DataValidationResult
 
-    Flujo:
+    Soporta:
+    - Datos OHLCV (velas de diferentes timeframes)
+    - Datos de Ticks (bid/ask en tiempo real)
+
+    Flujo para OHLCV:
     1. Usuario solicita datos (symbol, timeframe, date_from, date_to)
     2. Verificar caché (¿datos vigentes?)
     3. Si no está en caché, consultar DataStore (¿datos persistidos?)
+    4. Si no está en disk, descargar de MT5
+    5. Validar datos
+    6. Guardar en DataStore
+    7. Actualizar caché
+    8. Retornar datos + emitir evento
+
+    Flujo para Ticks:
+    1. Usuario solicita ticks (symbol, date_from, date_to)
+    2. Verificar caché
+    3. Si no está en caché, consultar DataStore
     4. Si no está en disk, descargar de MT5
     5. Validar datos
     6. Guardar en DataStore
@@ -235,6 +250,178 @@ class DataManager:
                 error=str(e)
             )
             raise DataDownloadError(f"Error descargando {symbol} {timeframe}: {e}")
+
+    def download_ticks(
+        self,
+        symbol: str,
+        date_from: datetime,
+        date_to: datetime = None,
+        force_refresh: bool = False,
+        group: str = 'TICK_ALL'
+    ) -> pd.DataFrame:
+        """
+        Descarga datos de ticks con lógica inteligente de caché y persistencia.
+
+        Args:
+            symbol: Símbolo (ej: 'EURUSD')
+            date_from: Fecha inicio
+            date_to: Fecha fin (si None, usa hoy)
+            force_refresh: Si True, ignora caché y descarga siempre
+            group: Tipo de ticks ('TICK_ALL', 'TICK_BID', 'TICK_ASK')
+
+        Returns:
+            DataFrame con datos de ticks validados
+
+        Raises:
+            DataDownloadError: Si falla la descarga o validación
+        """
+        if date_to is None:
+            date_to = datetime.now()
+
+        # Validar request
+        try:
+            request = DownloadRequest(
+                symbol=symbol,
+                timeframe=None,
+                data_type=DataType.TICKS,
+                date_from=date_from,
+                date_to=date_to,
+                force_refresh=force_refresh
+            )
+        except Exception as e:
+            logger.error(f"Request inválido: {e}")
+            raise DataDownloadError(f"Solicitud inválida: {e}")
+
+        logger.info(
+            f"Descargando ticks {symbol} {group} "
+            f"({date_from.date()} → {date_to.date()})"
+        )
+
+        emit(
+            'ticks.download.started',
+            source='DataManager',
+            symbol=symbol,
+            group=group,
+            date_from=date_from,
+            date_to=date_to
+        )
+
+        try:
+            # Paso 1: Verificar caché si no force_refresh
+            if not force_refresh:
+                cached_df = self.cache.get_data(symbol, 'TICKS', date_from, date_to)
+                if cached_df is not None:
+                    logger.info(f"✓ Hit en caché: {symbol}/TICKS")
+                    emit(
+                        'ticks.download.completed',
+                        source='DataManager',
+                        symbol=symbol,
+                        group=group,
+                        rows=len(cached_df),
+                        source_type='cache'
+                    )
+                    return cached_df
+
+            # Paso 2: Obtener rangos faltantes
+            missing_ranges = self.cache.get_missing_ranges(symbol, 'TICKS', date_from, date_to)
+
+            if not missing_ranges:
+                # Datos completos en caché
+                cached_df = self.cache.get_data(symbol, 'TICKS', date_from, date_to)
+                return cached_df
+
+            # Paso 3: Descargar datos faltantes
+            all_data = []
+
+            for miss_from, miss_to in missing_ranges:
+                logger.debug(f"Rango faltante: {miss_from.date()} → {miss_to.date()}")
+
+                # Evitar descargas concurrentes del mismo símbolo/ticks
+                with self._lock:
+                    queue_key = f"{symbol}:TICKS"
+                    if queue_key in self._download_queue:
+                        wait_until = self._download_queue[queue_key] + timedelta(seconds=2)
+                        if datetime.now() < wait_until:
+                            logger.debug(f"Esperando descarga anterior de {queue_key}...")
+                            # En lugar de esperar, usar datos del store si existen
+                            stored_df = self.store.load(symbol, 'TICKS', miss_from, miss_to)
+                            if stored_df is not None:
+                                all_data.append(stored_df)
+                                continue
+                    
+                    self._download_queue[queue_key] = datetime.now()
+
+                # Descargar de MT5
+                try:
+                    df = self.mt5.download_ticks(symbol, miss_from, miss_to, group)
+                    all_data.append(df)
+                except Exception as e:
+                    logger.warning(f"Error descargando ticks {symbol} ({group}): {e}")
+                    # Intentar cargar del almacenamiento como fallback
+                    stored_df = self.store.load(symbol, 'TICKS', miss_from, miss_to)
+                    if stored_df is not None:
+                        all_data.append(stored_df)
+                    else:
+                        raise DataDownloadError(f"No se pudo obtener ticks para {symbol}: {e}")
+
+            if not all_data:
+                raise DataDownloadError(f"No se obtuvieron ticks para {symbol}")
+
+            # Paso 4: Combinar datos
+            df = pd.concat(all_data, ignore_index=True)
+            df['time'] = pd.to_datetime(df['time'])
+            df = df.drop_duplicates(subset=['time', 'bid', 'ask']).sort_values('time').reset_index(drop=True)
+
+            # Paso 5: Validar
+            validation_result = validate_ticks_dataframe(df)
+
+            if not validation_result.is_valid:
+                logger.warning(f"Validación con advertencias: {validation_result.errors}")
+                emit(
+                    'ticks.validation.warning',
+                    source='DataManager',
+                    symbol=symbol,
+                    errors=validation_result.errors[:3]
+                )
+
+            # Paso 6: Almacenar persistentemente
+            try:
+                self.store.store(symbol, 'TICKS', df)
+            except Exception as e:
+                logger.error(f"Error almacenando ticks: {e}")
+                # No fallar si el almacenamiento tiene problemas
+
+            # Paso 7: Actualizar caché
+            self.cache.update(symbol, 'TICKS', df, date_from, date_to)
+
+            # Paso 8: Retornar datos filtrados por rango solicitado
+            mask = (df['time'] >= date_from) & (df['time'] <= date_to)
+            result_df = df[mask].reset_index(drop=True)
+
+            emit(
+                'ticks.download.completed',
+                source='DataManager',
+                symbol=symbol,
+                group=group,
+                rows=len(result_df),
+                source_type='mt5',
+                start_date=result_df['time'].min(),
+                end_date=result_df['time'].max()
+            )
+
+            logger.info(f"✓ Descargados {len(result_df)} ticks de {symbol} ({group})")
+            return result_df
+
+        except Exception as e:
+            logger.error(f"Error descargando ticks: {e}")
+            emit(
+                'ticks.download.error',
+                source='DataManager',
+                symbol=symbol,
+                group=group,
+                error=str(e)
+            )
+            raise DataDownloadError(f"Error descargando ticks {symbol} ({group}): {e}")
 
     def batch_download(
         self,

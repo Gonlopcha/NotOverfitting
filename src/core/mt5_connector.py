@@ -299,6 +299,122 @@ class MT5Connector:
             )
             raise DataDownloadError(error_msg)
 
+    def download_ticks(
+        self,
+        symbol: str,
+        start_date: datetime,
+        end_date: datetime = None,
+        group: str = 'TICK_ALL'
+    ) -> pd.DataFrame:
+        """
+        Descarga datos de ticks de un símbolo en el rango de fechas especificado.
+        
+        Args:
+            symbol: Símbolo a descargar (ej: 'EURUSD')
+            start_date: Fecha inicio (datetime)
+            end_date: Fecha final (datetime, si None usa la fecha actual)
+            group: Tipo de ticks ('TICK_ALL', 'TICK_BID', 'TICK_ASK')
+            
+        Returns:
+            DataFrame con columnas: time, bid, ask, bid_volume, ask_volume
+            
+        Raises:
+            DataDownloadError: Si la descarga falla
+            MT5ConnectionError: Si no hay conexión activa
+            
+        Note:
+            - TICK_ALL: Todos los ticks disponibles
+            - TICK_BID: Solo cambios en bid
+            - TICK_ASK: Solo cambios en ask
+            
+        Example:
+            >>> connector = MT5Connector()
+            >>> df = connector.download_ticks(
+            ...     'EURUSD',
+            ...     datetime(2023, 1, 1),
+            ...     datetime(2023, 1, 2),
+            ...     group='TICK_ALL'
+            ... )
+        """
+        if not self.is_connected():
+            raise MT5ConnectionError("No hay conexión activa con MT5")
+        
+        if end_date is None:
+            end_date = datetime.now()
+        
+        # Mapear grupos de ticks
+        group_map = {
+            'TICK_ALL': mt5.COPY_TICKS_ALL,
+            'TICK_BID': mt5.COPY_TICKS_BID,
+            'TICK_ASK': mt5.COPY_TICKS_ASK,
+        }
+        
+        if group not in group_map:
+            raise DataDownloadError(
+                f"Grupo de ticks '{group}' no válido. "
+                f"Disponibles: {', '.join(group_map.keys())}"
+            )
+        
+        mt5_group = group_map[group]
+        
+        try:
+            with self._connection_lock:
+                emit(
+                    'ticks.download.started',
+                    source='MT5Connector',
+                    symbol=symbol,
+                    group=group
+                )
+                
+                logger.info(f"Descargando ticks de {symbol} ({group}) desde {start_date} hasta {end_date}...")
+                
+                # Descargar ticks
+                ticks = mt5.copy_ticks_range(symbol, start_date, end_date, mt5_group)
+                
+                if ticks is None or len(ticks) == 0:
+                    error = mt5.last_error()
+                    raise DataDownloadError(
+                        f"No se obtuvieron ticks para {symbol} ({group}): {error}"
+                    )
+                
+                # Convertir a DataFrame
+                df = pd.DataFrame(ticks)
+                df['time'] = pd.to_datetime(df['time'], unit='s')
+                # Convertir microsegundos a nanosegundos si disponible
+                if 'time_msc' in df.columns:
+                    df['time'] = pd.to_datetime(df['time_msc'], unit='ms')
+                
+                # Seleccionar columnas relevantes
+                available_cols = [col for col in ['time', 'bid', 'ask', 'bid_volume', 'ask_volume'] 
+                                 if col in df.columns]
+                df = df[available_cols]
+                df = df.sort_values('time').reset_index(drop=True)
+                
+                emit(
+                    'ticks.download.completed',
+                    source='MT5Connector',
+                    symbol=symbol,
+                    group=group,
+                    rows=len(df),
+                    start=df['time'].iloc[0],
+                    end=df['time'].iloc[-1]
+                )
+                
+                logger.info(f"✓ Descargados {len(df)} ticks de {symbol} ({group})")
+                return df
+                
+        except Exception as e:
+            error_msg = f"Error descargando ticks de {symbol} ({group}): {e}"
+            logger.error(error_msg)
+            emit(
+                'ticks.download.error',
+                source='MT5Connector',
+                symbol=symbol,
+                group=group,
+                error=str(e)
+            )
+            raise DataDownloadError(error_msg)
+
     def get_symbol_info(self, symbol: str, use_cache: bool = True) -> Dict[str, Any]:
         """
         Obtiene información de un símbolo (digits, point, spread, etc.).
