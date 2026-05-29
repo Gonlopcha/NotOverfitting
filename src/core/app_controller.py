@@ -226,34 +226,86 @@ class AppController:
                 logger.info(f"✅ Modelo de producción guardado exitosamente en: {final_model_path}")
                 emit("log.message", message=f"Modelo guardado en {final_model_path}")
                 
-                # Ejecutar un Backtest final sobre todo el dataset histórico (In-Sample) para obtener métricas detalladas
-                logger.info("Ejecutando Backtest Final para extraer métricas completas...")
-                probs = model_manager.predict_proba(df_proc[feature_cols])
-                signal_gen = SignalGenerator(buy_threshold=best_params['buy_threshold'], enable_short=True, sell_threshold=best_params['sell_threshold'])
-                signals = signal_gen.generate(probs)
-                signals.index = df_proc.index
-                
+                # Ejecutar Backtest Final (Walk-Forward Out-Of-Sample)
+                logger.info("Construyendo curva Out-Of-Sample final...")
+                from src.backtest.walk_forward import WalkForwardValidator
                 from src.backtest.portfolio import Portfolio
                 from src.backtest.engine import BacktestEngine
                 from src.backtest.metrics import calculate_all_metrics
                 
-                backtest_data = self.current_data.loc[df_proc.index]
+                wf = WalkForwardValidator(n_splits=n_splits, train_size=0.7)
+                folds = wf.split(self.current_data)
+                
+                all_oos_signals = []
+                all_oos_data = []
+                
+                for train_data, test_data in folds:
+                    pipeline_fold = PipelineOrchestrator.create_default(
+                        features=['atr_14', 'rsi_14', 'bollinger_bands', 'ema_distances', 'log_returns', 'rolling_volatility_20', 'momentum_ma_ratio_50', 'relative_volume_20'],
+                        use_pca=True, pca_variance=best_params['pca_variance']
+                    )
+                    X_train_proc = pipeline_fold.fit_transform(train_data.copy())
+                    X_test_proc = pipeline_fold.transform(test_data.copy())
+                    
+                    train_target = apply_triple_barrier(X_train_proc, pt_factor=2.0, sl_factor=1.0, horizon=24, atr_col='atr_14')
+                    test_target = apply_triple_barrier(X_test_proc, pt_factor=2.0, sl_factor=1.0, horizon=24, atr_col='atr_14')
+                    
+                    valid_train = train_target.notna()
+                    valid_test = test_target.notna()
+                    
+                    X_train_proc = X_train_proc[valid_train]
+                    train_target = train_target[valid_train]
+                    X_test_proc = X_test_proc[valid_test]
+                    
+                    feature_cols_fold = [c for c in X_train_proc.columns if c not in drop_cols]
+                    
+                    mm_fold = ModelManager(n_estimators=best_params['rf_n_estimators'], max_depth=best_params['rf_max_depth'])
+                    mm_fold.train(X_train_proc[feature_cols_fold], pd.Series(train_target))
+                    
+                    probs = mm_fold.predict_proba(X_test_proc[feature_cols_fold])
+                    signal_gen = SignalGenerator(buy_threshold=best_params['buy_threshold'], enable_short=True, sell_threshold=best_params['sell_threshold'])
+                    signals = signal_gen.generate(probs)
+                    signals.index = X_test_proc.index
+                    
+                    all_oos_signals.append(signals)
+                    all_oos_data.append(test_data.loc[X_test_proc.index])
+                    
+                combined_signals = pd.concat(all_oos_signals)
+                # Dropping duplicates in case folds overlap, though WalkForward is sequential without overlap for test folds
+                combined_signals = combined_signals[~combined_signals.index.duplicated(keep='first')]
+                
+                combined_data = pd.concat(all_oos_data)
+                combined_data = combined_data[~combined_data.index.duplicated(keep='first')]
+                
                 portfolio = Portfolio(initial_capital=10000, max_drawdown_limit=0.20, kelly_fraction=0.5)
                 engine = BacktestEngine(portfolio)
-                engine.run(backtest_data, signals, symbol="SYMBOL_LIVE")
+                engine.run(combined_data, combined_signals, symbol="SYMBOL_OOS")
                 
                 trades = portfolio.get_summary()
                 metrics = calculate_all_metrics(pd.Series(portfolio.equity_curve), trades, num_trials=1)
                 
-                logger.info("\n========== MÉTRICAS FINALES (HISTÓRICO COMPLETO) ==========")
-                for k, v in metrics.items():
-                    if isinstance(v, float):
-                        logger.info(f"{k}: {v:.4f}")
+                # Format dates
+                if not combined_data.empty:
+                    if isinstance(combined_data.index, pd.DatetimeIndex):
+                        start_str = combined_data.index[0].strftime('%Y-%m-%d')
+                        end_str = combined_data.index[-1].strftime('%Y-%m-%d')
+                    elif 'time' in combined_data.columns:
+                        start_str = pd.to_datetime(combined_data['time'].iloc[0]).strftime('%Y-%m-%d')
+                        end_str = pd.to_datetime(combined_data['time'].iloc[-1]).strftime('%Y-%m-%d')
                     else:
-                        logger.info(f"{k}: {v}")
-                logger.info("==========================================================")
+                        start_str = str(combined_data.index[0])
+                        end_str = str(combined_data.index[-1])
+                else:
+                    start_str = 'N/A'
+                    end_str = 'N/A'
                 
-                emit("log.message", message=f"Métricas finales calculadas. Sharpe Histórico: {metrics.get('Sharpe Ratio', 0.0)}")
+                # Emitir a la UI (pestaña ResultsPanel)
+                mda_log = f"=== Evaluación OUT-OF-SAMPLE ===\n" \
+                          f"Fechas Evaluadas: {start_str} a {end_str}\n" \
+                          f"Este backtest combina los resultados de las ventanas de prueba (Walk-Forward) para reflejar el rendimiento futuro esperado con los hiperparámetros encontrados.\n" \
+                          f"Modelo maestro serializado en .joblib"
+                
+                emit("backtest.completed", metrics=metrics, mda_log=mda_log)
                 
             except Exception as e:
                 logger.exception("Error en optimización")
