@@ -18,15 +18,27 @@ class ModelManager:
     Por defecto usa Random Forest que es robusto al overfitting.
     """
 
-    def __init__(self, model: Any = None, model_dir: str = "models", **kwargs):
+    def __init__(self, model: Any = None, model_dir: str = "models", model_type: str = "rf", **kwargs):
         if model is None:
-            rf_kwargs = {
-                'n_estimators': kwargs.get('n_estimators', 100),
-                'max_depth': kwargs.get('max_depth', 5),
-                'random_state': 42,
-                'class_weight': 'balanced'
-            }
-            self.model = RandomForestClassifier(**rf_kwargs)
+            if model_type == "xgb":
+                from xgboost import XGBClassifier
+                xgb_kwargs = {
+                    'n_estimators': kwargs.get('n_estimators', 100),
+                    'max_depth': kwargs.get('max_depth', 5),
+                    'learning_rate': kwargs.get('learning_rate', 0.1),
+                    'random_state': 42,
+                    'eval_metric': 'logloss',
+                    'use_label_encoder': False
+                }
+                self.model = XGBClassifier(**xgb_kwargs)
+            else:
+                rf_kwargs = {
+                    'n_estimators': kwargs.get('n_estimators', 100),
+                    'max_depth': kwargs.get('max_depth', 5),
+                    'random_state': 42,
+                    'class_weight': 'balanced'
+                }
+                self.model = RandomForestClassifier(**rf_kwargs)
         else:
             self.model = model
         self.model_dir = model_dir
@@ -36,21 +48,37 @@ class ModelManager:
     def train(self, X_train: pd.DataFrame, y_train: pd.Series) -> None:
         """Entrena el modelo."""
         logger.info(f"Entrenando modelo {self.model.__class__.__name__} con {len(X_train)} muestras...")
-        self.model.fit(X_train, y_train)
+        
+        # XGBoost requires class labels to be 0, 1, 2...
+        if self.model.__class__.__name__ == "XGBClassifier":
+            y_train_mapped = y_train.map({-1: 0, 0: 1, 1: 2})
+            self.model.fit(X_train, y_train_mapped)
+        else:
+            self.model.fit(X_train, y_train)
+            
         logger.info("Entrenamiento finalizado.")
 
     def predict(self, X: pd.DataFrame) -> np.ndarray:
         """Realiza predicciones."""
-        return self.model.predict(X)
+        preds = self.model.predict(X)
+        if self.model.__class__.__name__ == "XGBClassifier":
+            # Map back 0->-1, 1->0, 2->1
+            mapping = {0: -1, 1: 0, 2: 1}
+            return np.vectorize(mapping.get)(preds)
+        return preds
 
     def predict_proba(self, X: pd.DataFrame) -> pd.DataFrame:
         """
-        Devuelve las probabilidades predichas como un DataFrame alineado con las clases (-1, 0, 1).
-        Asegura que siempre existan las columnas para todas las clases esperadas, 
+        Devuelve un DataFrame con las probabilidades de cada clase (-1, 0, 1)
         incluso si la muestra de entrenamiento no tenía alguna clase.
         """
         probs = self.model.predict_proba(X)
-        classes = self.model.classes_
+        
+        if self.model.__class__.__name__ == "XGBClassifier":
+            # In XGBoost with our mapping, classes are implicitly 0, 1, 2 which map to -1, 0, 1
+            classes = [-1, 0, 1]
+        else:
+            classes = self.model.classes_
         
         df_probs = pd.DataFrame(probs, columns=classes, index=X.index)
         

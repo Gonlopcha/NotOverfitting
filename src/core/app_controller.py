@@ -180,7 +180,9 @@ class AppController:
                     df_backtest = test_df
                     
                     # 2. Entrenar Modelo y calcular MDA
-                    model_manager = ModelManager()
+                    model_type_str = kwargs.get("strategy", "rf")
+                    selected_model = "xgb" if "xgb" in model_type_str.lower() else "rf"
+                    model_manager = ModelManager(model_type=selected_model)
                     model_manager.train(X_train, y_train)
                     
                     mda_df = model_manager.calculate_mda(X_test, y_test)
@@ -217,11 +219,12 @@ class AppController:
             
         n_trials = kwargs.get("n_trials", 20)
         n_splits = kwargs.get("n_splits", 3)
+        model_type = kwargs.get("model_type", "rf")
         
         def _run():
             try:
                 optimizer = OptunaOptimizer(self.current_data, n_trials=n_trials, n_splits=n_splits)
-                best_params = optimizer.optimize()
+                best_params = optimizer.optimize(model_type=model_type)
                 
                 # Entrenar modelo final con los mejores parámetros
                 logger.info("Entrenando modelo final con todos los datos...")
@@ -241,7 +244,20 @@ class AppController:
                 drop_cols = ['open', 'high', 'low', 'close', 'tick_volume', 'spread', 'real_volume', 'time']
                 feature_cols = [c for c in df_proc.columns if c not in drop_cols]
                 
-                model_manager = ModelManager(n_estimators=best_params['rf_n_estimators'], max_depth=best_params['rf_max_depth'])
+                if model_type == "xgb":
+                    model_manager = ModelManager(
+                        model_type="xgb", 
+                        n_estimators=best_params.get('xgb_n_estimators', 100), 
+                        max_depth=best_params.get('xgb_max_depth', 5), 
+                        learning_rate=best_params.get('xgb_learning_rate', 0.1)
+                    )
+                else:
+                    model_manager = ModelManager(
+                        model_type="rf",
+                        n_estimators=best_params.get('rf_n_estimators', 100), 
+                        max_depth=best_params.get('rf_max_depth', 5)
+                    )
+                    
                 model_manager.train(df_proc[feature_cols], target)
                 
                 # Serializar el modelo completo (Pipeline + ModelManager + Hiperparámetros de señal)

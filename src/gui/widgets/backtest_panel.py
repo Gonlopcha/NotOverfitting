@@ -28,7 +28,7 @@ class BacktestPanel(QWidget):
         
         self.strategy_combo = QComboBox()
         # En el futuro se llenará desde el Registry
-        self.strategy_combo.addItems(["RandomForestClassifier (Default)", "LogisticRegression"])
+        self.strategy_combo.addItems(["RandomForestClassifier (Default)", "XGBoost"])
         strat_layout.addRow("Modelo Predictivo:", self.strategy_combo)
         
         strat_group.setLayout(strat_layout)

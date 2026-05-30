@@ -36,7 +36,11 @@ class OptimizationPanel(QWidget):
 
         config_layout.addRow("Número de Trials (Iteraciones):", self.spin_trials)
         config_layout.addRow("Número de Folds (Walk-Forward):", self.spin_splits)
-        
+        from PySide6.QtWidgets import QComboBox
+        self.model_combo = QComboBox()
+        self.model_combo.addItems(["Random Forest (rf)", "XGBoost (xgb)"])
+        config_layout.addRow("Tipo de Modelo:", self.model_combo)
+
         config_group.setLayout(config_layout)
         layout.addWidget(config_group)
 
@@ -80,9 +84,12 @@ class OptimizationPanel(QWidget):
         self.append_log("Iniciando optimización (Optuna)...")
         self.table.setRowCount(0)
         
+        selected_model = "xgb" if "xgb" in self.model_combo.currentText() else "rf"
+        
         emit("optimization.run.request", 
              n_trials=self.spin_trials.value(), 
-             n_splits=self.spin_splits.value())
+             n_splits=self.spin_splits.value(),
+             model_type=selected_model)
 
     def on_started(self, **kwargs):
         self.sig_started.emit(kwargs)

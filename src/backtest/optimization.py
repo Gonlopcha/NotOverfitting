@@ -28,13 +28,21 @@ class OptunaOptimizer:
         self.n_splits = n_splits
         self.study = None
         
-    def _objective(self, trial: optuna.Trial) -> float:
+    def _objective(self, trial: optuna.Trial, model_type: str = "rf") -> float:
         # 1. Definir el espacio de búsqueda (Hiperparámetros)
         pca_variance = trial.suggest_float("pca_variance", 0.80, 0.99)
-        rf_max_depth = trial.suggest_int("rf_max_depth", 3, 10)
-        rf_n_estimators = trial.suggest_int("rf_n_estimators", 50, 200)
         buy_threshold = trial.suggest_float("buy_threshold", 0.51, 0.60)
         sell_threshold = trial.suggest_float("sell_threshold", 0.40, 0.49)
+        
+        if model_type == "xgb":
+            max_depth = trial.suggest_int("xgb_max_depth", 3, 10)
+            n_estimators = trial.suggest_int("xgb_n_estimators", 50, 300)
+            learning_rate = trial.suggest_float("xgb_learning_rate", 0.01, 0.3)
+            model_kwargs = {'max_depth': max_depth, 'n_estimators': n_estimators, 'learning_rate': learning_rate}
+        else:
+            max_depth = trial.suggest_int("rf_max_depth", 3, 10)
+            n_estimators = trial.suggest_int("rf_n_estimators", 50, 200)
+            model_kwargs = {'max_depth': max_depth, 'n_estimators': n_estimators}
         
         # 2. Inicializar Walk-Forward Validator
         wf = WalkForwardValidator(n_splits=self.n_splits, train_size=0.7)
@@ -85,7 +93,7 @@ class OptunaOptimizer:
                     return -999.0 # Castigo por mala configuración
                 
                 # Entrenamiento
-                model_manager = ModelManager(n_estimators=rf_n_estimators, max_depth=rf_max_depth)
+                model_manager = ModelManager(model_type=model_type, **model_kwargs)
                 model_manager.train(X_train_proc[feature_cols], pd.Series(train_target))
                 
                 # Predicción
@@ -126,14 +134,14 @@ class OptunaOptimizer:
         
         return avg_sharpe
         
-    def optimize(self) -> Dict[str, Any]:
+    def optimize(self, model_type: str = "rf") -> Dict[str, Any]:
         """
         Ejecuta la optimización y retorna los mejores parámetros.
         """
         self.study = optuna.create_study(direction="maximize", study_name="WalkForward_Optimization")
         
         emit("optimization.started", total_trials=self.n_trials)
-        self.study.optimize(self._objective, n_trials=self.n_trials)
+        self.study.optimize(lambda trial: self._objective(trial, model_type=model_type), n_trials=self.n_trials)
         emit("optimization.finished", best_params=self.study.best_params, best_value=self.study.best_value)
         
         logger.info(f"Mejor Sharpe: {self.study.best_value}")
