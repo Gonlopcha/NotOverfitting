@@ -435,11 +435,11 @@ StrategyBase (ABC)
 │
 ├── name: str
 ├── pipeline: PipelineOrchestrator
-├── model: ModelManager
+├── model: ModelManager (RandomForest / XGBoost)
 │
 ├── on_init()                        # Inicialización de la estrategia
 ├── on_bar(bar: BarData)             # Se llama en cada nueva vela
-├── generate_signal(features: df)    # Produce señal de trading
+├── generate_signal(features: df)    # Produce señal de trading (probabilidades)
 ├── on_trade(trade: TradeResult)     # Callback post-ejecución
 │
 ├── fit(train_data) → self           # Entrena pipeline + modelo
@@ -493,9 +493,15 @@ sequenceDiagram
         ST->>ST: pipeline.transform(bar)
         ST->>ST: model.predict(features)
         ST-->>BE: Signal(BUY/SELL/HOLD)
-      
-        alt Signal != HOLD
-            BE->>PF: execute(signal, price, size)
+        
+        BE->>BE: Check TP, SL o Expiración (24 barras)
+        alt Toca TP/SL/Expira o Signal reverso
+            BE->>PF: execute(0, exit_price, size) # Cierra posición
+        end
+        
+        alt Signal != HOLD y no hay posición
+            BE->>BE: Calcula ATR actual para barreras
+            BE->>PF: execute(signal, entry_price, size, tp_price, sl_price)
             PF->>PF: update_equity()
             PF-->>BE: TradeResult
             BE->>ST: on_trade(result)
