@@ -341,7 +341,12 @@ class AppController:
                 combined_data = pd.concat(all_oos_data)
                 combined_data = combined_data[~combined_data.index.duplicated(keep='first')]
                 
-                portfolio = Portfolio(initial_capital=10000, max_drawdown_limit=0.20, kelly_fraction=0.5)
+                from src.core.config_manager import ConfigManager
+                config = ConfigManager()
+                init_cap = config.get("backtest.initial_capital", 10000.0)
+                dd_limit = config.get("backtest.max_drawdown", 0.50)
+                
+                portfolio = Portfolio(initial_capital=init_cap, max_drawdown_limit=dd_limit, kelly_fraction=0.5)
                 engine = BacktestEngine(portfolio)
                 engine.run(combined_data, combined_signals, symbol="SYMBOL_OOS")
                 

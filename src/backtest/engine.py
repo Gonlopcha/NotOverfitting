@@ -113,10 +113,10 @@ class BacktestEngine:
                     tp_price = entry_price - (atr * 2.0)
                     sl_price = entry_price + (atr * 1.0)
                 
-                comision = entry_price * size * self.commission_pct
-                self.portfolio.current_capital -= comision
-                
-                self.portfolio.execute_trade(symbol, current_signal, entry_price, current_time, size, tp_price=tp_price, sl_price=sl_price)
+                if not self.portfolio.is_risk_limit_exceeded():
+                    comision = entry_price * size * self.commission_pct
+                    self.portfolio.current_capital -= comision
+                    self.portfolio.execute_trade(symbol, current_signal, entry_price, current_time, size, tp_price=tp_price, sl_price=sl_price)
                      
             # 3. Actualizar la curva de capital al cierre actual (mark-to-market temporal)
             mtm_capital = self.portfolio.current_capital

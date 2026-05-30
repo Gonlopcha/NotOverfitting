@@ -188,3 +188,4 @@ notoverfitting.log.1
 data_store/ohlcv/EURUSD/M5/2025.parquet
 data_store/ohlcv/EURUSD/H1/2023.parquet
 data_store/ohlcv/US500/H1/2025.parquet
+data_store/ohlcv/US500/H1/2020.parquet

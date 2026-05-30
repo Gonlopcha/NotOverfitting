@@ -82,8 +82,8 @@ class Portfolio:
 
     def execute_trade(self, symbol: str, signal: int, price: float, time: pd.Timestamp, size: float, tp_price: float = None, sl_price: float = None):
         """Abre o cierra una posición según la señal."""
-        if self.is_risk_limit_exceeded():
-            logger.warning("No se permiten más operaciones, se excedió el límite de drawdown.")
+        if self.is_risk_limit_exceeded() and signal != 0 and (symbol not in self.positions or self.positions[symbol].direction != signal):
+            logger.warning("No se permiten más operaciones de apertura, se excedió el límite de drawdown.")
             return
 
         # Señal de salida si hay posición abierta contraria (o señal explícita de cierre 0)
