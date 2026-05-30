@@ -5,7 +5,7 @@ mt5:
   timeout: 10000
 
 data:
-  default_symbols: ["EURUSD", "GBPUSD", "USDJPY"]
+  default_symbols: ["EURUSD", "GBPUSD", "USDJPY", "US500"]
   default_timeframe: "H1"
   storage_path: "./data_store"
   cache_days: 30

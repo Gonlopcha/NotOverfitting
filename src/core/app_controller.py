@@ -311,7 +311,19 @@ class AppController:
                     
                     feature_cols_fold = [c for c in X_train_proc.columns if c not in drop_cols]
                     
-                    mm_fold = ModelManager(n_estimators=best_params['rf_n_estimators'], max_depth=best_params['rf_max_depth'])
+                    if model_type == "xgb":
+                        mm_fold = ModelManager(
+                            model_type="xgb", 
+                            n_estimators=best_params.get('xgb_n_estimators', 100), 
+                            max_depth=best_params.get('xgb_max_depth', 5), 
+                            learning_rate=best_params.get('xgb_learning_rate', 0.1)
+                        )
+                    else:
+                        mm_fold = ModelManager(
+                            model_type="rf",
+                            n_estimators=best_params.get('rf_n_estimators', 100), 
+                            max_depth=best_params.get('rf_max_depth', 5)
+                        )
                     mm_fold.train(X_train_proc[feature_cols_fold], pd.Series(train_target))
                     
                     probs = mm_fold.predict_proba(X_test_proc[feature_cols_fold])
