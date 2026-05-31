@@ -43,6 +43,31 @@ class BacktestEngine:
             "volume_step": volume_step
         }
         
+    def calculating_lots(self, risk_percentage: float, symbol: str, entry: float, stoploss: float, nums_tps: int):
+        """Calcula el tamaño del lote basado en el porcentaje de riesgo."""
+        mkt        = self._get_market_data(symbol)
+        point      = mkt["point"]
+        tick_value = mkt["tick_value"]
+        balance    = mkt["balance"]
+
+        try: 
+            lot_size   = (balance * risk_percentage) / (abs(entry - stoploss) / point * tick_value)
+            lot_per_tp = lot_size / nums_tps
+        except ZeroDivisionError:
+            logger.error(f"Error en calculating_lots: División por cero. Datos: entry={entry}, stoploss={stoploss}, point={point}, tick_value={tick_value}")
+            return 0, 0
+        
+        return lot_size, lot_per_tp
+
+    def normalize_lot(self, lot: float, symbol: str) -> float:
+        import math
+        try:
+            step = self._get_market_data(symbol)["volume_step"]
+        except Exception as e:
+            logger.error("Error en normalize_lot: %s", e)
+            return lot
+        return math.floor(lot / step) * step
+        
     def run(self, data: pd.DataFrame, signals: pd.Series, symbol: str) -> None:
         """
         Ejecuta el backtest bar a bar.
@@ -139,16 +164,9 @@ class BacktestEngine:
                 
                 # Tamaño de lote dinámico basado en riesgo
                 risk_percentage = config.get("backtest.position_size", 0.01)
-                mkt = self._get_market_data(symbol)
-                try: 
-                    lot_size = (mkt["balance"] * risk_percentage) / (abs(entry_price - sl_price) / mkt["point"] * mkt["tick_value"])
-                    step = mkt["volume_step"]
-                    import math
-                    size = math.floor(lot_size / step) * step
-                except ZeroDivisionError:
-                    size = mkt["volume_step"]
-                    
-                if size <= 0: size = mkt["volume_step"]
+                lot_size, _ = self.calculating_lots(risk_percentage, symbol, entry_price, sl_price, 1)
+                size = self.normalize_lot(lot_size, symbol)
+                if size <= 0: size = self._get_market_data(symbol)["volume_step"]
                 
                 if not self.portfolio.is_risk_limit_exceeded():
                     comision = entry_price * size * self.commission_pct
