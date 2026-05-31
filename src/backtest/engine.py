@@ -19,6 +19,30 @@ class BacktestEngine:
         self.commission_pct = commission_pct
         self.slippage_pips = slippage_pips 
         
+    def _get_market_data(self, symbol: str) -> dict:
+        """Emula los datos de mercado para el cálculo dinámico de lotaje en backtest."""
+        point = 0.00001
+        tick_value = 1.0
+        volume_step = 0.01
+        
+        if "JPY" in symbol:
+            point = 0.001
+        elif "US500" in symbol or "SP500" in symbol:
+            point = 0.1
+            tick_value = 1.0
+            volume_step = 0.1
+        elif "XAU" in symbol or "GOLD" in symbol:
+            point = 0.01
+            tick_value = 1.0
+            volume_step = 0.01
+            
+        return {
+            "point": point,
+            "tick_value": tick_value,
+            "balance": self.portfolio.current_capital,
+            "volume_step": volume_step
+        }
+        
     def run(self, data: pd.DataFrame, signals: pd.Series, symbol: str) -> None:
         """
         Ejecuta el backtest bar a bar.
@@ -112,6 +136,19 @@ class BacktestEngine:
                     entry_price = price * (1 - (self.slippage_pips / 10000.0))
                     tp_price = entry_price - (atr * 2.0)
                     sl_price = entry_price + (atr * 1.0)
+                
+                # Tamaño de lote dinámico basado en riesgo
+                risk_percentage = config.get("backtest.position_size", 0.01)
+                mkt = self._get_market_data(symbol)
+                try: 
+                    lot_size = (mkt["balance"] * risk_percentage) / (abs(entry_price - sl_price) / mkt["point"] * mkt["tick_value"])
+                    step = mkt["volume_step"]
+                    import math
+                    size = math.floor(lot_size / step) * step
+                except ZeroDivisionError:
+                    size = mkt["volume_step"]
+                    
+                if size <= 0: size = mkt["volume_step"]
                 
                 if not self.portfolio.is_risk_limit_exceeded():
                     comision = entry_price * size * self.commission_pct
